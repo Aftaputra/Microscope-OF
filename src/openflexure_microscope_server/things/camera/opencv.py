@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from threading import Thread
 from types import TracebackType
-from typing import Literal, Optional, Self
+from typing import Optional, Self
 
 import cv2
 from PIL import Image
@@ -136,41 +136,33 @@ class OpenCVCamera(BaseCamera):
     @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh."""
-        self.capture_array()
+        self.capture_as_array()
 
     @lt.action
-    def capture_array(
+    def capture_as_array(
         self,
-        stream_name: Literal["main", "lores", "raw", "full"] = "full",
-        wait: Optional[float] = None,
+        capture_mode: str = "standard",
+        raw: bool = False,
     ) -> NDArray:
-        """Acquire one image from the camera and return as an array.
-
-        This function will produce a nested list containing an uncompressed RGB image.
-        It's likely to be highly inefficient - raw and/or uncompressed captures using
-        binary image formats will be added in due course.
-        """
-        if wait is not None:
-            LOGGER.warning("OpenCV camera has no wait option. Use None.")
-        LOGGER.warning(f"OpenCV camera doesn't respect {stream_name=}")
+        """Acquire one image from the camera and return as an array."""
+        if raw is True:
+            raise NotImplementedError(
+                "OpenCV camera camera doesn't support raw capture."
+            )
+        # Warn if the capture mode is incorrect, but don't read the coerced value as
+        # this camera only supports one mode.
+        self._validate_capture_mode(capture_mode)
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError("Failed to capture frame from camera.")
         return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    def capture_image(
-        self,
-        stream_name: Literal["main", "lores", "full"] = "main",
-        wait: Optional[float] = None,
-    ) -> Image.Image:
-        """Acquire one image from the camera and return as a PIL image.
-
-        This function will produce a JPEG image.
-        """
-        if wait is not None:
-            LOGGER.warning("OpenCV camera has no wait option. Use None.")
-        LOGGER.warning(f"OpenCV camera doesn't respect {stream_name=}")
-        return Image.fromarray(self.capture_array())
+    def _capture_image(self, capture_mode: str = "standard") -> Image.Image:
+        """Acquire one image from the camera and return as a PIL image."""
+        # Warn if the capture mode is incorrect, but don't read the coerced value as
+        # this camera only supports one mode.
+        self._validate_capture_mode(capture_mode)
+        return Image.fromarray(self.capture_as_array())
 
     @lt.property
     def manual_camera_settings(self) -> list[PropertyControl]:

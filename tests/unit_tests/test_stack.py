@@ -8,10 +8,13 @@ import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+from PIL import Image
+from pydantic import ValidationError
 
 from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.scan_directories import IMAGE_REGEX
+from openflexure_microscope_server.things import RelativeDataPath
 from openflexure_microscope_server.things.autofocus import (
     EXTRA_STACK_CAPTURES,
     AutofocusThing,
@@ -262,6 +265,10 @@ def histo_scan_workflow():
     workflow._csm.calibration_required = False
     workflow._csm.convert_image_to_stage_coordinates = lambda x, y: {"x": x, "y": y}
 
+    # And set up camera
+    workflow._cam.capture_modes = {"standard": "Mock"}
+    workflow._cam._capture_image.return_value = Image.new("RGB", (1000, 1000))
+
     return workflow
 
 
@@ -341,7 +348,7 @@ def test_coercing_stack_save_ims(
 @pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
 def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
     """Test Running smart stack with the stack passing on different attempts."""
-    scan_settings, _ = histo_scan_workflow.all_settings(images_dir="dummy")
+    scan_settings, _, _ = histo_scan_workflow.all_settings(RelativeDataPath("dummy"))
     assert scan_settings.smart_stack_params.max_attempts == 3
 
     # Set up returns from z-stack
@@ -878,35 +885,15 @@ def test_invalid_stack_settling_raises():
 
 
 @pytest.mark.parametrize(
-    ("bad_path", "match_err"),
+    ("bad_path", "error_type"),
     [
-        ("", "String should have at least 1 character"),
-        (None, "Input should be a valid string"),
-        (67, "Input should be a valid string"),
+        (None, TypeError),
+        (67, TypeError),
+        ("../dangerous", ValidationError),
+        ("/usr/bin/bash", ValidationError),
     ],
 )
-def test_invalid_capture_dir_raises(bad_path, match_err):
+def test_invalid_capture_dir_raises(bad_path, error_type):
     """Test basic stack raises expected error for bad image dir paths."""
-    with pytest.raises(ValueError, match=match_err):
-        CaptureParams(images_dir=bad_path, save_resolution=(20, 20))
-
-
-@pytest.mark.parametrize(
-    ("bad_res", "match_err"),
-    [
-        ((-100, 50), "Input should be greater than or equal to 1"),
-        ((20, 0), "Input should be greater than or equal to 1"),
-        ("", "Input should be a valid tuple"),
-        (None, "Input should be a valid tuple"),
-        (67, "Input should be a valid tuple"),
-        (
-            ["path"],
-            "Input should be a valid integer, unable to parse string as an integer",
-        ),
-        ((20, 20, 20), "Tuple should have at most 2 items"),
-    ],
-)
-def test_invalid_capture_res_raises(bad_res, match_err):
-    """Test basic stack raises expected error for invalid save resolutions."""
-    with pytest.raises(ValueError, match=match_err):
-        CaptureParams(images_dir="dummy", save_resolution=bad_res)
+    with pytest.raises(error_type):
+        CaptureParams(images_dir=bad_path, capture_mode="foo")

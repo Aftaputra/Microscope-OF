@@ -7,11 +7,8 @@ import numpy as np
 from PIL import Image
 
 
-def test_jpeg_and_array(picamera_client):
-    """Check that a jpeg grabbed from the stream is the same size as other captures.
-
-    Compare it to an array capture and a jpeg capture.
-    """
+def test_quick_capture_size(picamera_client):
+    """Check that a jpeg grabbed from the stream is the same size as a quick capture."""
     # Grab a jpeg from the stream
     blob = picamera_client.grab_jpeg()
     mjpeg_frame = Image.open(blob.open())
@@ -20,18 +17,57 @@ def test_jpeg_and_array(picamera_client):
     assert mjpeg_frame.format == "JPEG"
 
     # Capture a jpeg
-    blob = picamera_client.capture_jpeg(stream_name="main")
+    blob = picamera_client.capture(
+        capture_mode="quick",
+        image_format="jpeg",
+        retain_image=True,
+    )
     jpeg_capture = Image.open(blob.open())
     jpeg_capture.verify()
     assert jpeg_capture.format == "JPEG"
 
     # Capture an array
-    arrlist = picamera_client.capture_array(stream_name="main")
+    arrlist = picamera_client.capture_as_array(capture_mode="quick")
     array_main = np.array(arrlist)
 
     # Verify image sizes are the same
     assert mjpeg_frame.size == jpeg_capture.size
     assert array_main.shape[1::-1] == jpeg_capture.size
+
+
+def test_format(picamera_client):
+    """Check capture format is as requested."""
+    # Capture a jpeg
+    blob = picamera_client.capture(
+        capture_mode="quick",
+        image_format="jpeg",
+        retain_image=True,
+    )
+    jpeg_capture = Image.open(blob.open())
+    jpeg_capture.verify()
+    assert jpeg_capture.format == "JPEG"
+
+    blob = picamera_client.capture(
+        capture_mode="quick",
+        image_format="png",
+        retain_image=True,
+    )
+    png_capture = Image.open(blob.open())
+    png_capture.verify()
+    assert png_capture.format == "PNG"
+
+
+def test_standard_capture_size(picamera_client):
+    """Check standard capture mode captures at expected size."""
+    # Capture a jpeg
+    blob = picamera_client.capture(
+        capture_mode="standard",
+        image_format="jpeg",
+        retain_image=True,
+    )
+    jpeg_capture = Image.open(blob.open())
+    jpeg_capture.verify()
+    assert jpeg_capture.size == (1640, 1232)
 
 
 def test_record_framerate(picamera_client):

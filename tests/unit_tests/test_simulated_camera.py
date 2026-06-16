@@ -159,12 +159,12 @@ def test_infinite_sample(camera, stage):
     camera.noise_level = 0
     assert not camera.repeating
     cached_canvas = camera.canvas
-    array_not_repeating = camera.capture_array()
+    array_not_repeating = camera.capture_as_array()
     camera.repeating = True
     time.sleep(0.2)  # Ensure frame regenerates
     # Canvas shouldn't regenerate
     assert camera.canvas is cached_canvas
-    array_repeating = camera.capture_array()
+    array_repeating = camera.capture_as_array()
     # Images are identical whether or not repeating
     assert np.array_equal(array_not_repeating, array_repeating)
 
@@ -174,13 +174,13 @@ def test_infinite_sample(camera, stage):
     camera.repeating = False
     time.sleep(0.2)  # Ensure frame regenerates
     # If not repeating the array is just background
-    assert np.all(camera.capture_array() == simulation.BG_COLOR)
+    assert np.all(camera.capture_as_array() == simulation.BG_COLOR)
 
     # Turn on repeating
     camera.repeating = True
     time.sleep(0.2)  # Ensure frame regenerates
     # Sample is now infinite, so not all background
-    assert not np.all(camera.capture_array() == simulation.BG_COLOR)
+    assert not np.all(camera.capture_as_array() == simulation.BG_COLOR)
 
 
 def test_simulation_cam_calibration(camera):

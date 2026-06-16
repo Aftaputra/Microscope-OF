@@ -413,13 +413,14 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
         smart_scan_thing._workflow.all_settings.return_value = (
             MockWorkflowSettingModel(),
             StitchingSettings(correlation_resize=0.5, overlap=0.45),
+            (1640, 1232),
         )
-        smart_scan_thing._workflow.save_resolution = (1640, 1232)
 
         mock_ongoing_scan = mocker.Mock()
         mock_ongoing_scan.name = MOCK_SCAN_NAME
         mock_ongoing_scan.images_dir = MOCK_SCAN_DIR
         smart_scan_thing._ongoing_scan = mock_ongoing_scan
+        smart_scan_thing._data_dir = "scans"
 
         yield smart_scan_thing
 

@@ -169,9 +169,9 @@ def test_picamera_metadata_written_to_exif(mock_picam_thing, temp_jpeg, mocker):
     mock_interface.get_thing_states.return_value = camera.thing_state
     camera._thing_server_interface = mock_interface
 
-    capture_metadata = camera._capture_metadata()
+    ofm_metadata = camera._collect_ofm_metadata()
 
-    camera._add_metadata_to_capture(str(temp_jpeg), capture_metadata)
+    camera._add_metadata_to_capture(str(temp_jpeg), ofm_metadata)
 
     exif_dict = piexif.load(str(temp_jpeg))
     user_comment = json.loads(exif_dict["Exif"][piexif.ExifIFD.UserComment].decode())

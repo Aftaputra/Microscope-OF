@@ -11,22 +11,22 @@ from __future__ import annotations
 import io
 import json
 import os
-import tempfile
 import time
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from datetime import datetime
 from types import TracebackType
-from typing import Annotated, Any, Literal, Mapping, Optional, Self, Tuple
+from typing import Any, Literal, Mapping, Optional, Self
 
 import numpy as np
 import piexif
 from PIL import Image
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from openflexure_microscope_server.things import OFMThing
+from openflexure_microscope_server.things import OFMThing, RelativeDataPath
 from openflexure_microscope_server.things.background_detect import (
     BackgroundDetectAlgorithm,
 )
@@ -34,31 +34,42 @@ from openflexure_microscope_server.ui import ActionButton, PropertyControl
 from openflexure_microscope_server.utilities import coerce_thing_selector
 
 
-class JPEGBlob(lt.blob.Blob):
-    """A class representing a JPEG image as a LabThings FastAPI Blob."""
+class ImageFormatInfo(BaseModel):
+    """Basic data for image formats."""
 
-    media_type: str = "image/jpeg"
+    media_type: str
+    extension: str
+    supported_extensions: tuple[str, ...]
+    """All supported extension (lowercase)."""
+
+    def path_matches(self, path: str) -> bool:
+        """Return True if path matches one of the supported extensions."""
+        return path.lower().endswith(self.supported_extensions)
 
 
-class PNGBlob(lt.blob.Blob):
-    """A class representing a PNG image as a LabThings FastAPI Blob."""
-
-    media_type: str = "image/png"
+BASE_IMAGE_FORMATS: dict[str, ImageFormatInfo] = {
+    "jpeg": ImageFormatInfo(
+        media_type="image/jpeg",
+        extension=".jpeg",
+        supported_extensions=(".jpeg", ".jpg"),
+    ),
+    "png": ImageFormatInfo(
+        media_type="image/png",
+        extension=".png",
+        supported_extensions=(".png",),
+    ),
+}
 
 
 class CaptureError(RuntimeError):
     """An error trying to capture from a CameraThing."""
 
 
-PositiveInt = Annotated[int, Field(ge=1)]
-NonEmptyString = Annotated[str, Field(min_length=1)]
-
-
 class CaptureParams(BaseModel):
     """A class for capturing at least a single image."""
 
-    images_dir: NonEmptyString
-    save_resolution: tuple[PositiveInt, PositiveInt]
+    images_dir: RelativeDataPath
+    capture_mode: str
 
 
 class NoImageInMemoryError(RuntimeError):
@@ -71,7 +82,7 @@ class CameraMemoryBuffer:
     However subclasses of BaseCamera can use this class to store other object types.
     """
 
-    _storage: dict[int, tuple[Any, Mapping[str, Any]]]
+    _storage: dict[int, tuple[Any, Mapping[str, Any], str]]
 
     def __init__(self) -> None:
         """Create the buffer instance."""
@@ -86,6 +97,7 @@ class CameraMemoryBuffer:
         self,
         image: Any,
         metadata: Mapping[str, Any],
+        mode: str,
         buffer_max: int = 1,
     ) -> int:
         """Add an image to the Memory buffer.
@@ -104,12 +116,12 @@ class CameraMemoryBuffer:
         """
         self._latest_id += 1
         self._create_space(buffer_max)
-        self._storage[self._latest_id] = (image, metadata)
+        self._storage[self._latest_id] = (image, metadata, mode)
         return self._latest_id
 
     def get_image(
         self, buffer_id: Optional[int] = None, remove: bool = True
-    ) -> tuple[Any, Mapping[str, Any]]:
+    ) -> tuple[Any, Mapping[str, Any], str]:
         """Return the image with the given id.
 
         If no id is given the most recent image is returned. However, the
@@ -169,10 +181,21 @@ class CameraMemoryBuffer:
 class StreamingMode(BaseModel):
     """Description of streaming modes for the camera.
 
-    Cameras can sub class this to record camera specific information about the mode.
+    Cameras can sub class this to store camera specific information about the mode.
     """
 
     description: str
+
+
+class CaptureMode(BaseModel):
+    """Description of still capture modes for the camera.
+
+    Cameras can sub class this to store camera specific information about the mode.
+    """
+
+    description: str
+    save_resolution: Optional[tuple[int, int]] = None
+    """The resolution to save the image. Use None to save as captured."""
 
 
 class BaseCamera(OFMThing, ABC):
@@ -191,6 +214,8 @@ class BaseCamera(OFMThing, ABC):
     _memory_buffer = CameraMemoryBuffer()
     supports_focus_fom: bool = False
 
+    supported_image_formats = deepcopy(BASE_IMAGE_FORMATS)
+
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise the base camera, this creates the background detectors.
 
@@ -205,8 +230,10 @@ class BaseCamera(OFMThing, ABC):
         # would be ideal.
         self._default_background_detector = "bg_channel_deviations_luv"
         self._background_detector_name: Optional[str] = None
+        self._framerate_monitor_running = False
 
-        if "default" and "full_resolution" not in self.streaming_modes:
+        required_modes = ("default", "full_resolution")
+        if not all(mode in self.streaming_modes for mode in required_modes):
             raise KeyError(
                 f"Camera {type(self).__name__} doesn't define both a 'default' and a "
                 "'full_resolution' streaming mode."
@@ -429,97 +456,11 @@ class BaseCamera(OFMThing, ABC):
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh."""
 
-    @abstractmethod
-    @lt.action
-    def capture_array(
-        self,
-        stream_name: Literal["main", "lores", "raw", "full"] = "main",
-        wait: Optional[float] = 5,
-    ) -> NDArray:
-        """Acquire one image from the camera and return as an array."""
-
-    downsampled_array_factor: int = lt.property(default=2, ge=1)
-    """The downsampling factor when calling capture_downsampled_array."""
-
-    @lt.action
-    def capture_downsampled_array(self) -> NDArray:
-        """Acquire one image from the camera, downsample, and return as an array.
-
-        * The array is downsamples by the thing property `downsampled_array_factor`.
-        * The default capture array arguments are used.
-
-        This method provides the interface expected by the camera_stage_mapping.
-        """
-        img = self.capture_array()
-        return downsample(self.downsampled_array_factor, img)
-
-    @lt.action
-    def capture_jpeg(
-        self,
-        stream_name: Literal["main", "lores", "full"] = "main",
-        wait: Optional[float] = None,
-    ) -> JPEGBlob:
-        """Acquire one image from the camera as a JPEG.
-
-        This will use the internal capture image functionally of capture_image of
-        the specific camera being used.
-
-        :param stream_name: A stream name supported by this camera.
-        :param wait: (Optional, float) Set a timeout in seconds. If None it will
-            use the default for the underlying camera.
-        """
-        fname = datetime.now().strftime("%Y-%m-%d-%H%M%S.jpeg")
-        directory = tempfile.TemporaryDirectory()
-        jpeg_path = os.path.join(directory.name, fname)
-
-        img = self.capture_image(stream_name, wait)
-
-        capture_metadata = self._capture_metadata()
-
-        self._save_capture(
-            path=jpeg_path,
-            image=img,
-            metadata=capture_metadata,
-        )
-
-        return JPEGBlob.from_temporary_directory(directory, fname)
-
-    @lt.action
-    def capture_png(
-        self,
-        stream_name: Literal["main", "lores", "full"] = "main",
-        wait: Optional[float] = None,
-    ) -> PNGBlob:
-        """Acquire one image from the camera as a PNG.
-
-        This will use the internal capture image functionally of capture_image of
-        the specific camera being used.
-
-        :param stream_name: A stream name supported by this camera.
-        :param wait: (Optional, float) Set a timeout in seconds. If None it will
-            use the default for the underlying camera.
-        """
-        fname = datetime.now().strftime("%Y-%m-%d-%H%M%S.jpeg")
-        directory = tempfile.TemporaryDirectory()
-        png_path = os.path.join(directory.name, fname)
-
-        img = self.capture_image(stream_name, wait)
-
-        capture_metadata = self._capture_metadata()
-
-        self._save_capture(
-            path=png_path,
-            image=img,
-            metadata=capture_metadata,
-        )
-
-        return PNGBlob.from_temporary_directory(directory, fname)
-
     @lt.action
     def grab_jpeg(
         self,
         stream_name: Literal["main", "lores"] = "main",
-    ) -> JPEGBlob:
+    ) -> lt.blob.Blob:
         """Acquire one image from the preview stream and return as blob of JPEG data.
 
         Note: in rare cases the JPEG stream may be broken. This can cause an OS error
@@ -527,7 +468,7 @@ class BaseCamera(OFMThing, ABC):
         complete, this error will not be raised until the data is accessed. Consider
         using ``grab_jpeg_as_array`` instead.
 
-        This differs from ``capture_jpeg`` in that it does not pause the MJPEG
+        This differs from ``capture`` in that it does not pause the MJPEG
         preview stream. Instead, we simply return the next frame from that
         stream (either "main" for the preview stream, or "lores" for the low
         resolution preview). No metadata is returned.
@@ -536,7 +477,9 @@ class BaseCamera(OFMThing, ABC):
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
         frame = self._thing_server_interface.call_async_task(stream.grab_frame)
-        return JPEGBlob.from_bytes(frame)
+        blob = lt.blob.Blob.from_bytes(frame)
+        blob.media_type = BASE_IMAGE_FORMATS["jpeg"].media_type
+        return blob
 
     @lt.action
     def grab_as_array(
@@ -549,7 +492,7 @@ class BaseCamera(OFMThing, ABC):
         this method over directly grabbing the frame and converting to a numpy array
         via PIL.
 
-        This differs from ``capture_array`` in that it does not pause the MJPEG
+        This differs from ``capture_as_array`` in that it does not pause the MJPEG
         preview stream.
         """
         stream = (
@@ -575,32 +518,118 @@ class BaseCamera(OFMThing, ABC):
         )
         return self._thing_server_interface.call_async_task(stream.next_frame_size)
 
+    @lt.property
+    def capture_modes(self) -> Mapping[str, CaptureMode]:
+        """Modes the camera can use for capturing."""
+        return {
+            "quick": CaptureMode(
+                description="Capture without altering the stream settings.",
+            ),
+            "standard": CaptureMode(description="The standard capture mode."),
+        }
+
+    def _validate_capture_mode(self, capture_mode: str) -> str:
+        """Check input capture mode exists, always returns a valid mode.
+
+        :param capture_mode: The capture mode to check. If this isn't valid a warning
+            will be logged.
+
+        :return: The input capture mode if it is supported, or "standard".
+        """
+        if capture_mode not in self.capture_modes:
+            name = type(self).__name__
+            self.logger.warning(
+                f"{name} has no capture mode {capture_mode}. Using the 'standard' "
+                "capture mode instead."
+            )
+            capture_mode = "standard"
+        return capture_mode
+
     @abstractmethod
-    def capture_image(
+    @lt.action
+    def capture_as_array(
         self,
-        stream_name: Literal["main", "lores", "full"],
-        wait: Optional[float] = None,
-    ) -> Image.Image:
-        """Capture a PIL image from stream stream_name with timeout wait."""
+        capture_mode: str = "standard",
+        raw: bool = False,
+    ) -> NDArray:
+        """Acquire one image from the camera and return as an array."""
+
+    downsampled_array_factor: int = lt.property(default=2, ge=1)
+    """The downsampling factor when calling capture_downsampled_array."""
 
     @lt.action
-    def capture_and_save(
+    def capture_downsampled_array(self) -> NDArray:
+        """Acquire one image from the camera, downsample, and return as an array.
+
+        * The array is downsampled by the thing property `downsampled_array_factor`.
+        * The default capture array arguments are used.
+
+        This method provides the interface expected by the camera_stage_mapping.
+        """
+        img = self.capture_as_array(capture_mode="quick")
+        return downsample(self.downsampled_array_factor, img)
+
+    @lt.action
+    def capture(
         self,
-        jpeg_path: str,
-        save_resolution: Optional[Tuple[int, int]] = None,
+        capture_mode: str = "standard",
+        image_format: str = "jpeg",
+        retain_image: bool = True,
+    ) -> lt.blob.Blob:
+        """Acquire one image from the camera.
+
+        This will use the internal capture image functionally of _capture_image of
+        the specific camera being used.
+
+        :param capture_mode: The mode to use, must be one of ``capture_modes``.
+        :param image_format: The image format to use, must be one of
+            ``supported_image_formats``
+        :param retain_image: (Default True) True to save image to the microscope,
+            False to only save temporarily for transfer.
+
+        :returns: A LabThings Blob that with access to the captured file.
+        """
+        format_info = self.supported_image_formats[image_format]
+        fname = datetime.now().strftime("%Y-%m-%d-%H%M%S") + format_info.extension
+
+        path = RelativeDataPath(fname)
+        tmpdir = None
+        if retain_image:
+            path.set_saving_thing(self)
+        else:
+            tmpdir = path.save_to_tempdir()
+
+        self.capture_and_save_to_path(path, capture_mode)
+
+        if tmpdir is None:
+            blob = lt.blob.Blob.from_file(path.abs_data_path)
+        else:
+            blob = lt.blob.Blob.from_temporary_directory(tmpdir, fname)
+        blob.media_type = format_info.media_type
+        return blob
+
+    def capture_and_save_to_path(
+        self,
+        path: RelativeDataPath,
+        capture_mode: str = "standard",
     ) -> None:
         """Capture an image and save it to disk.
 
-        :param jpeg_path: The path to save the file to
-        :param save_resolution: can be set to resize the image before saving. By
-            default this is None meaning that the image is saved at original resolution.
-        """
-        image, capture_metadata = self._robust_image_capture()
+        This is not an action as it exposes a direct path for saving
 
-        self._save_capture(jpeg_path, image, capture_metadata, save_resolution)
+        :param path: The path to save the file to, this should be a ``RelativeDataPath``
+            object. If the saving Thing is not set for the path, the camera's data
+            directory will be used.
+        :param capture_mode:  (Optional) The name of the capture mode as defined by the
+            camera.
+        """
+        buffer_id = self.capture_to_memory(capture_mode=capture_mode)
+        self.save_from_memory(path=path, buffer_id=buffer_id)
 
     @lt.action
-    def capture_to_memory(self, buffer_max: int = 1) -> int:
+    def capture_to_memory(
+        self, capture_mode: str = "standard", buffer_max: int = 1, max_attempts: int = 5
+    ) -> int:
         """Capture an image to memory. This can be saved later with ``save_from_memory``.
 
         Note that only one image is held in memory so this will overwrite any image
@@ -608,66 +637,102 @@ class BaseCamera(OFMThing, ABC):
 
         :param buffer_max: The maximum number of images that should be in the buffer
             once this images is added. Default is 1.
+        :param max_attempts: The maximum number of times to attempt the capture.
 
         :returns: the buffer id of the image captured
         """
-        image, metadata = self._robust_image_capture()
-        return self._memory_buffer.add_image(image, metadata, buffer_max=buffer_max)
+        success = False
+        for capture_attempts in range(max_attempts):
+            try:
+                ofm_metadata = self._collect_ofm_metadata()
+
+                image = self._capture_image(capture_mode=capture_mode)
+                success = True
+                break
+            except TimeoutError:
+                self.logger.warning(
+                    f"Attempt {capture_attempts + 1} to capture image timed out. "
+                    "Do you have enough RAM?"
+                )
+
+        if not success:
+            raise CaptureError(
+                f"An error occurred while capturing after {max_attempts} attempts"
+            )
+
+        return self._memory_buffer.add_image(
+            image, ofm_metadata, capture_mode, buffer_max=buffer_max
+        )
 
     @lt.action
     def save_from_memory(
         self,
-        jpeg_path: str,
-        save_resolution: Optional[Tuple[int, int]] = None,
+        path: RelativeDataPath,
         buffer_id: Optional[int] = None,
     ) -> None:
         """Save an image that has been captured to memory.
 
-        :param jpeg_path: The path to save the file to
-        :param save_resolution: can be set to resize the image before saving. By
-            default this is None meaning that the image is saved at original
-            resolution.
+        Note this is not exposed as an action as it allows arbitrary paths on disk to
+        be written to.
+
+        :param path: The path to save the file to
         :param buffer_id: The buffer id of the image to save, this was returned by
             ``capture_to_memory``
         """
-        image, metadata = self._memory_buffer.get_image(buffer_id)
+        image, metadata, mode = self._memory_buffer.get_image(buffer_id)
 
-        self._save_capture(
-            path=jpeg_path,
-            image=image,
-            metadata=metadata,
-            save_resolution=save_resolution,
-        )
+        mode_info = self.capture_modes[mode]
+        save_resolution = mode_info.save_resolution
+
+        path.set_saving_thing_if_unset(self)
+        resolved_path = path.abs_data_path
+
+        if save_resolution is not None and image.size != save_resolution:
+            image = image.resize(save_resolution, Image.Resampling.BOX)
+        try:
+            save_kwargs: dict[str, Any] = {}
+            if BASE_IMAGE_FORMATS["jpeg"].path_matches(resolved_path):
+                # Per PIL documentation,
+                # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
+                # there are two factors when saving a JPEG. Subsampling affects the colour,
+                # quality affects the pixels.
+                # subsampling = 0 disables subsampling of colour
+                # quality = 95 is the maximum recommended - above this, JPEG compression is
+                # disabled, file size increases and quality is barely or not affected
+                save_kwargs = {"quality": 95, "subsampling": 0}
+            if (
+                BASE_IMAGE_FORMATS["png"].path_matches(resolved_path)
+                and image.mode == "RGBX"
+            ):
+                image = image.convert("RGB")
+            image.save(resolved_path, **save_kwargs)
+            try:
+                self._add_metadata_to_capture(resolved_path, dict(metadata))
+            except Exception:
+                # We need to capture any exception as there are many reasons metadata
+                # might not be added. We warn rather than log the error.
+                self.logger.exception(f"Failed to add metadata to {resolved_path}")
+        except Exception as e:
+            raise IOError(f"An error occurred while saving {resolved_path}") from e
+
+    @abstractmethod
+    def _capture_image(self, capture_mode: str = "standard") -> Image.Image:
+        """Capture a PIL image from the camera.
+
+        This unlike the ``grab_*`` methods this may pause the stream or temporarily
+        switch streaming mode to capture the image if required by the mode.
+        """
 
     @lt.action
     def clear_buffers(self) -> None:
         """Clear all images in memory."""
         self._memory_buffer.clear()
 
-    def _robust_image_capture(self) -> Tuple[Image.Image, Mapping[str, Any]]:
-        """Capture an image in memory and return it with metadata.
+    def _collect_ofm_metadata(self) -> dict:
+        """Return the metadata for a capture.
 
-        This robust capturing method attempts to capture the image five times
-        each time with a 5 second timeout set.
-
-        :raises CaptureError: if the capture fails for any reason
-
-        :returns: tuple with PIL Image, and dictionary of metadata.
+        This is information from the thing states, the time, and make/model names.
         """
-        for capture_attempts in range(5):
-            try:
-                capture_metadata = self._capture_metadata()
-
-                image = self.capture_image(stream_name="main", wait=5)
-                return image, capture_metadata
-            except TimeoutError:
-                self.logger.warning(
-                    f"Attempt {capture_attempts + 1} to capture image timed out. Do you have enough RAM?"
-                )
-        raise CaptureError("An error occurred while capturing after 5 attempts")
-
-    def _capture_metadata(self) -> dict:
-        """Return the metadata for a capture, from the thing states, time and known names."""
         metadata = self._thing_server_interface.get_thing_states()
         current_time = datetime.now()
         return {
@@ -678,7 +743,7 @@ class BaseCamera(OFMThing, ABC):
             "things_states": metadata,
         }
 
-    def _add_metadata_to_capture(self, jpeg_path: str, capture_metadata: dict) -> None:
+    def _add_metadata_to_capture(self, path: str, capture_metadata: dict) -> None:
         """Add the EXIF metadata for a JPEG image.
 
         This adds:
@@ -687,7 +752,7 @@ class BaseCamera(OFMThing, ABC):
         - Camera Make and Model
         """
         # Load existing EXIF
-        exif_dict = piexif.load(jpeg_path)
+        exif_dict = piexif.load(path)
 
         user_metadata = capture_metadata["things_states"]
         capture_time = capture_metadata["capture_time"]
@@ -721,45 +786,7 @@ class BaseCamera(OFMThing, ABC):
         exif_dict["0th"][piexif.ImageIFD.Model] = capture_metadata["model"]
 
         # Write the updated EXIF back to the file
-        piexif.insert(piexif.dump(exif_dict), jpeg_path)
-
-    def _save_capture(
-        self,
-        path: str,
-        image: Image.Image,
-        metadata: Mapping[str, Any],
-        save_resolution: Optional[Tuple[int, int]] = None,
-    ) -> None:
-        """Save the captured image and metadata to disk.
-
-        A warning is logged if metadata cannot be added.
-
-        :raises IOError: if the file cannot be saved
-
-        nothing is returned on success
-        """
-        if save_resolution is not None and image.size != save_resolution:
-            image = image.resize(save_resolution, Image.Resampling.BOX)
-        try:
-            save_kwargs: dict[str, Any] = {}
-            if path.endswith("jpg"):
-                # Per PIL documentation,
-                # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
-                # there are two factors when saving a JPEG. Subsampling affects the colour,
-                # quality affects the pixels.
-                # subsampling = 0 disables subsampling of colour
-                # quality = 95 is the maximum recommended - above this, JPEG compression is
-                # disabled, file size increases and quality is barely or not affected
-                save_kwargs = {"quality": 95, "subsampling": 0}
-            image.save(path, **save_kwargs)
-            try:
-                self._add_metadata_to_capture(path, dict(metadata))
-            except Exception:
-                # We need to capture any exception as there are many reasons metadata
-                # might not be added. We warn rather than log the error.
-                self.logger.exception(f"Failed to add metadata to {path}")
-        except Exception as e:
-            raise IOError(f"An error occurred while saving {path}") from e
+        piexif.insert(piexif.dump(exif_dict), path)
 
     settling_time: float = lt.setting(default=0.2, ge=0)
     """The settling time when calling the ``settle()`` method."""

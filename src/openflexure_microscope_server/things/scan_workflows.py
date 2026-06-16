@@ -4,7 +4,6 @@ This module contains the base ``ScanWorkflow`` class that all workflows should s
 as well as specific workflows.
 """
 
-import os
 from typing import (
     Generic,
     Literal,
@@ -27,6 +26,7 @@ from openflexure_microscope_server.stitching import (
     TARGET_STITCHING_DIMENSION,
     StitchingSettings,
 )
+from openflexure_microscope_server.things import RelativeDataPath
 from openflexure_microscope_server.things.autofocus import (
     MAX_TEST_IMAGE_COUNT,
     MIN_TEST_IMAGE_COUNT,
@@ -55,6 +55,10 @@ from openflexure_microscope_server.ui import (
 SettingModelType = TypeVar("SettingModelType", bound=BaseModel)
 
 
+class WorkflowStartError(lt.exceptions.InvocationError):
+    """The scan workflow cannot start, as the requested configuration is invalid."""
+
+
 class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     """A base class for all Scanworkflows.
 
@@ -75,7 +79,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     _planner_cls: type[ScanPlanner]
 
     # All workflows set a save resolution
-    save_resolution: tuple[int, int] = lt.setting(default=(1640, 1232))
+    capture_mode: str = lt.setting(default="standard")
     """A tuple of the image resolution to capture."""
 
     # CSM may not be set, and isn't required for a workflow. Allow for it to exist or be None
@@ -85,15 +89,19 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     _stage: BaseStage = lt.thing_slot()
     _autofocus: AutofocusThing = lt.thing_slot()
 
-    def check_before_start(self, scan_name: str) -> None:
+    # The noqa statement is because scan_name is unused but is needed for equivalence
+    # with other workflows that may want to validate the scan name.
+    def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
         """Check before the scan starts. Throw an error if the scan shouldn't start.
 
         The scan_name is passed to this function to enable workflows to validate the
         scan name if needed.
         """
-        raise NotImplementedError(
-            "Each specific ScanWorkflow must implement a check_before_start."
-        )
+        if self.capture_mode not in self._cam.capture_modes:
+            cam_name = type(self._cam).__name__
+            raise WorkflowStartError(
+                f"{cam_name} has no capure mode {self.capture_mode}"
+            )
 
     @lt.property
     def ready(self) -> bool:
@@ -103,18 +111,26 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         )
 
     def all_settings(
-        self, images_dir: str
-    ) -> tuple[SettingModelType, Optional[StitchingSettings]]:
+        self, images_dir: RelativeDataPath
+    ) -> tuple[SettingModelType, Optional[StitchingSettings], tuple[int, int]]:
         """Return the scan settings and the stitching settings.
 
         - The specific settings for this scan workflow are returned as a Base Model of
             the type set when defining the class.
         - Stitiching settings are returned either as a StitchingSettings object or None
             is returned if it is not possible to stitch the scan.
+        - The save resolution as determined by a test image.
         """
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement a `all_settings` method."
         )
+
+    def _get_save_resolution(self) -> tuple[int, int]:
+        """Return the save resolution as determined by a test image."""
+        # Capture an example image.
+        image = self._cam._capture_image(capture_mode=self.capture_mode)
+        # Check size to create a unit faction for downsampling.
+        return image.size
 
     def pre_scan_routine(self, settings: SettingModelType) -> None:
         """Overload to set the routine that happens before each scan."""
@@ -148,14 +164,14 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         self,
         xyz_pos: tuple[int, int, int],
         dz: int,
-        images_dir: str,
-        save_resolution: tuple[int, int],
+        images_dir: RelativeDataPath,
+        capture_mode: str,
     ) -> tuple[bool, Optional[int]]:
         """Autofocus and then capture, this can be used as an acquisition routine.
 
         :param dz: The dz for autofocus.
-        :param images_dir: The path to the directory for saving images..
-        :param save_resolution: The resolution to save images at.
+        :param images_dir: The path to the directory for saving images.
+        :param capture_mode: The name of the camera capture mode.
 
         :return: A tuple ready to pass out of acquisition routine. In this method,
             image is always taken, so first return is True.
@@ -164,9 +180,9 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         self._autofocus.fast_autofocus(dz=dz)
         focus_height = self._stage.get_xyz_position()[2]
         filename = f"img_{xyz_pos[0]}_{xyz_pos[1]}_{focus_height}.jpeg"
-        self._cam.capture_and_save(
-            jpeg_path=os.path.join(images_dir, filename),
-            save_resolution=save_resolution,
+        self._cam.capture_and_save_to_path(
+            path=images_dir.join(filename),
+            capture_mode=capture_mode,
         )
 
         return True, focus_height
@@ -217,16 +233,15 @@ class RectGridWorkflow(
     must be above this. 3000 is a sensible limit for 20x objectives.
     """
 
-    # The noqa statement is because scan_name is unused but is needed for equivalence
-    # with other workflows that may want to validate the scan name.
-    def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
+    def check_before_start(self, scan_name: str) -> None:
         """Before starting a scan, check that camera-stage-mapping is set.
 
         Raise error if:
           - camera stage mapping is not set
         """
+        super().check_before_start(scan_name)
         if self._csm.calibration_required:
-            raise RuntimeError("Camera Stage Mapping is not calibrated.")
+            raise WorkflowStartError("Camera Stage Mapping is not calibrated.")
 
     def _calc_displacement_from_overlap(self, overlap: float) -> tuple[int, int]:
         """Use camera stage mapping to calculate x and y displacement from given overlap.
@@ -261,11 +276,11 @@ class RectGridWorkflow(
         )
         return y_move_stage["x"], x_move_stage["y"]
 
-    def _get_stitching_settings_model(self) -> StitchingSettings:
+    def _get_stitching_settings_model(
+        self, save_resolution: tuple[int, int]
+    ) -> StitchingSettings:
         """Return a stitching settings model based on current settings."""
-        # Use the save resolution and target stitch resolution to choose a unit fraction,
-        # which makes correlating faster
-        width, height = self.save_resolution
+        width, height = save_resolution
         # Target area in pixels
         target_area = TARGET_STITCHING_DIMENSION**2
         # Find N so that (width/N) * (height/N) ~ target_area
@@ -285,17 +300,18 @@ class RectGridWorkflow(
         return self._settings_model(**base_kwargs)
 
     def all_settings(
-        self, images_dir: str
-    ) -> tuple[RectGridSettingModelType, Optional[StitchingSettings]]:
+        self, images_dir: RelativeDataPath
+    ) -> tuple[RectGridSettingModelType, Optional[StitchingSettings], tuple[int, int]]:
         """Return scan settings and the stitching settings.
 
         :param images_dir: The directory that images are to be written to.
-        :return: A tuple containing the settings model for this workflow and the
-            settings model for stitching.
+        :return: A tuple containing the settings model for this workflow, the
+            settings model for stitching, and the save resolution.
         """
+        save_resolution = self._get_save_resolution()
         # Developer Note: When subclassing RectGridWorkflow rather than override
         # this method first consider overriding _build_scan_settings
-        stitching_settings = self._get_stitching_settings_model()
+        stitching_settings = self._get_stitching_settings_model(save_resolution)
         dx, dy = self._calc_displacement_from_overlap(self.overlap)
 
         base_kwargs = {
@@ -303,14 +319,14 @@ class RectGridWorkflow(
             "dx": dx,
             "dy": dy,
             "capture_params": CaptureParams(
-                images_dir=images_dir, save_resolution=self.save_resolution
+                images_dir=images_dir, capture_mode=self.capture_mode
             ),
             "autofocus_params": AutofocusParams(dz=self.autofocus_dz),
         }
 
         scan_settings = self._build_scan_settings(base_kwargs)
 
-        return scan_settings, stitching_settings
+        return scan_settings, stitching_settings, save_resolution
 
     @lt.property
     def ready(self) -> bool:
@@ -510,20 +526,22 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel], SmartStackMixi
     # The noqa statement is because scan_name is unused but is needed for equivalence
     # with other workflows that may want to validate the scan name.
     def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
-        """Before starting a scan, check that background and camera-stage-mapping are set.
+        """Before starting a scan, check that background and CSM are set.
 
         Raise error if:
           - background is to be skipped but is not set
           - camera stage mapping is not set
 
-        Raise warning if not using background detect that scan will go on until max steps reached
+        Raise warning if not using background detect that scan will go on until max
+        steps reached.
         """
+        super().check_before_start(scan_name)
         if self._csm.calibration_required:
-            raise RuntimeError("Camera Stage Mapping is not calibrated.")
+            raise WorkflowStartError("Camera Stage Mapping is not calibrated.")
 
         if self.skip_background:
             if not self._background_detector.ready:
-                raise RuntimeError(
+                raise WorkflowStartError(
                     "Background is not set: you need to calibrate background detection."
                 )
         else:

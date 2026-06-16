@@ -7,20 +7,9 @@
     <div class="uk-margin">
       <action-button
         thing="camera"
-        action="capture_jpeg"
-        :submit-data="{ stream_name: 'main' }"
-        :submit-label="'Low Resolution'"
-        @response="handleCaptureResponse"
-        @error="modalError"
-      />
-    </div>
-
-    <div class="uk-margin">
-      <action-button
-        thing="camera"
-        action="capture_jpeg"
-        :submit-data="{ stream_name: 'full' }"
-        submit-label="Full Resolution"
+        action="capture"
+        :submit-data="{ capture_mode: 'standard' }"
+        submit-label="Capture"
         :submit-on-event="'globalCaptureEvent'"
         @response="handleCaptureResponse"
         @error="modalError"

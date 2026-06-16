@@ -4,6 +4,7 @@ import itertools
 import logging
 
 import pytest
+from PIL import Image
 from pydantic import BaseModel
 
 import labthings_fastapi as lt
@@ -11,6 +12,7 @@ from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.scan_planners import SmartSpiral
 from openflexure_microscope_server.stitching import StitchingSettings
+from openflexure_microscope_server.things import RelativeDataPath
 from openflexure_microscope_server.things.autofocus import SmartStackParams
 from openflexure_microscope_server.things.camera_stage_mapping import csm_img_to_stage
 from openflexure_microscope_server.things.scan_workflows import (
@@ -44,8 +46,6 @@ def test_partial_base_classes():
     bad_workflow = create_thing_without_server(BadWorkflow)
 
     settings = MinimalSettings()
-    with pytest.raises(NotImplementedError):
-        bad_workflow.check_before_start(settings)
 
     with pytest.raises(NotImplementedError):
         bad_workflow.ready
@@ -69,7 +69,17 @@ def test_partial_base_classes():
 @pytest.fixture
 def histo_workflow():
     """Return a HistoScanWorkflow thing with slots mocked."""
-    return create_thing_without_server(HistoScanWorkflow, mock_all_slots=True)
+    workflow = create_thing_without_server(HistoScanWorkflow, mock_all_slots=True)
+    workflow._cam.capture_modes = {"standard": "Mock"}
+    workflow._cam._capture_image.return_value = Image.new("RGB", (1111, 1222))
+    return workflow
+
+
+def test_histo_workflow_save_resolution(histo_workflow):
+    """Check that the camera is used to get the save resolution."""
+    width, height = histo_workflow._get_save_resolution()
+    assert width == 1111
+    assert height == 1222
 
 
 # Use itertools to iterate over every true/false permutation
@@ -117,7 +127,12 @@ def test_histo_workflow_settings_generation(histo_workflow, mocker):
     mocker.patch.object(
         histo_workflow, "_calc_displacement_from_overlap", return_value=(123, 456)
     )
-    workflow_settings, stitching_settings = histo_workflow.all_settings("/this/img_dir")
+
+    img_dir = RelativeDataPath("this/img_dir")
+    workflow_settings, stitching_settings, save_res = histo_workflow.all_settings(
+        img_dir
+    )
+    assert save_res == (1111, 1222)
     ## Check type
     assert isinstance(workflow_settings, HistoScanSettingsModel)
     assert isinstance(stitching_settings, StitchingSettings)
@@ -137,7 +152,7 @@ def test_histo_workflow_settings_generation(histo_workflow, mocker):
     assert workflow_settings.dx == 123
     assert workflow_settings.dy == 456
     # And that the input image dir is passed to stack the stack parameter for saving
-    assert workflow_settings.capture_params.images_dir == "/this/img_dir"
+    assert workflow_settings.capture_params.images_dir.root == "this/img_dir"
 
 
 def test_histo_workflow_settings_generation_equal_overlap(histo_workflow, mocker):
@@ -148,8 +163,9 @@ def test_histo_workflow_settings_generation_equal_overlap(histo_workflow, mocker
 
     # Different when False
     histo_workflow.equal_distances = False
-    workflow_settings, _stitching_settings = histo_workflow.all_settings(
-        "/this/img_dir"
+    img_dir = RelativeDataPath("this/img_dir")
+    workflow_settings, _stitching_settings, _save_res = histo_workflow.all_settings(
+        img_dir
     )
 
     assert workflow_settings.dx == 123
@@ -157,8 +173,8 @@ def test_histo_workflow_settings_generation_equal_overlap(histo_workflow, mocker
 
     # Same when set True
     histo_workflow.equal_distances = True
-    workflow_settings, _stitching_settings = histo_workflow.all_settings(
-        "/this/img_dir"
+    workflow_settings, _stitching_settings, _save_res = histo_workflow.all_settings(
+        img_dir
     )
 
     assert workflow_settings.dx == 123
@@ -455,9 +471,8 @@ def test_correlation_resize(histo_workflow, save_res, expected_resize):
     target area, taking the square root, and rounding to the nearest integer N. Then
     correlation_resize = 1 / N.
     """
-    histo_workflow.save_resolution = save_res
     histo_workflow.overlap = 0.1
-    settings = histo_workflow._get_stitching_settings_model()
+    settings = histo_workflow._get_stitching_settings_model(save_res)
 
     assert isinstance(settings, StitchingSettings)
     assert settings.correlation_resize == expected_resize

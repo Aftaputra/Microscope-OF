@@ -5,10 +5,16 @@ test_simulated_camera.py and for testing the consistency of camera APIs see
 test_cameras.py.
 """
 
+import os
+from dataclasses import dataclass, field
+from typing import Optional
+
 import numpy as np
 import pytest
 from PIL import Image
 
+from openflexure_microscope_server.things import RelativeDataPath
+from openflexure_microscope_server.things.camera import CaptureMode
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
@@ -61,3 +67,73 @@ def test_handle_broken_frame(test_env):
     for _i in range(15):
         array = camera.grab_as_array()
         assert isinstance(array, np.ndarray)
+
+
+@dataclass
+class MemorySaveTestCase:
+    """Inputs and expected outputs for testing ``save_from_memory``.
+
+    The default save kwargs assume a jpeg.
+    """
+
+    filename: str = "foobar.jpeg"
+    save_resolution: Optional[tuple[int, int]] = None
+    resize_needed: bool = False
+    convert_needed: bool = False
+    save_kwargs: dict[str, int] = field(
+        default_factory=lambda: {"quality": 95, "subsampling": 0}
+    )
+
+
+SAVE_TEST_CASES = [
+    # Default test case is a jpeg, check it works with all extensions.
+    MemorySaveTestCase("foobar.jpeg"),
+    MemorySaveTestCase("foobar.jpg"),
+    MemorySaveTestCase("foobar.JPEG"),
+    MemorySaveTestCase("foobar.JPG"),
+    MemorySaveTestCase("foobar.png.jpeg"),
+    MemorySaveTestCase("foobar.png", save_kwargs={}, convert_needed=True),
+    MemorySaveTestCase("foobar.PNG", save_kwargs={}, convert_needed=True),
+    MemorySaveTestCase("foobar.jpeg.png", save_kwargs={}, convert_needed=True),
+    MemorySaveTestCase(save_resolution=None, resize_needed=False),
+    MemorySaveTestCase(save_resolution=(1000, 1200), resize_needed=False),
+    MemorySaveTestCase(save_resolution=(2000, 2400), resize_needed=True),
+]
+
+
+@pytest.mark.parametrize("test_case", SAVE_TEST_CASES)
+def test_save_from_memory(test_case, test_env, mocker):
+    """Check the correct image is retrieved and saved with correct settings."""
+    camera = test_env.get_thing_by_type(SimulatedCamera)
+    camera._memory_buffer = mocker.Mock()
+    camera._add_metadata_to_capture = mocker.Mock()
+
+    mode = CaptureMode(description="foo", save_resolution=test_case.save_resolution)
+    capture_modes_mock = mocker.PropertyMock(return_value={"standard": mode})
+    mocker.patch.object(type(camera), "capture_modes", capture_modes_mock)
+
+    mock_image = mocker.Mock()
+    # Make resize and convert return itself so we can track further calls of the Image
+    # object after a resize
+    mock_image.resize.return_value = mock_image
+    mock_image.convert.return_value = mock_image
+    mock_image.size = (1000, 1200)
+    mock_image.mode = "RGBX"
+
+    camera._memory_buffer.get_image.return_value = (
+        mock_image,
+        {"meta": "data"},
+        "standard",
+    )
+
+    camera._data_dir = os.path.normpath("/fake/data/dir")
+
+    camera.save_from_memory(RelativeDataPath(test_case.filename), 33)
+
+    assert camera._memory_buffer.get_image.call_count == 1
+    assert camera._memory_buffer.get_image.call_args.args == (33,)
+    assert camera._add_metadata_to_capture.call_count == 1
+    assert mock_image.resize.call_count == (1 if test_case.resize_needed else 0)
+    assert mock_image.convert.call_count == (1 if test_case.convert_needed else 0)
+    assert mock_image.save.call_count == 1
+    assert mock_image.save.call_args.kwargs == test_case.save_kwargs
