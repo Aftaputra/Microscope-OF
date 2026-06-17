@@ -7,6 +7,13 @@ import { markRaw } from "vue";
  * If a component has unmet props or global mocks setup.js is set to fail the test
  **/
 export const componentOverrides = {
+  "galleryContent.vue": {
+    global: {
+      mocks: {
+        readThingProperty: () => [],
+      },
+    },
+  },
   "serverSpecifiedPropertyControl.vue": {
     props: {
       propertyData: {},

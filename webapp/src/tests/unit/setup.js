@@ -1,9 +1,20 @@
 import { vi, beforeEach, afterEach } from "vitest";
 
-let consoleWatchdog;
+/**
+ * @file: Global setup for unit tests.
+ * @description This file sets up the testing environment for all unit tests, including:
+ * - Mocking localStorage to prevent side effects and ensure test isolation.
+ * - Spying on console.warn and console.error to catch any Vue warnings or uncaught exceptions during component mounting.
+ * - Cleaning up the DOM and memory after each test to prevent leaks and ensure a fresh state for subsequent tests.
+ * - Enforcing strict failure on any Vue warnings or console errors to maintain high code quality and catch issues early.
+ */
 
-// Create an isolated, in-memory mock for localStorage
+let consoleWarnWatchdog;
+let consoleErrorWatchdog;
 
+/**
+ * Mock implementation of localStorage for testing purposes.
+ */
 const localStorageMock = (() => {
   let store = {};
   return {
@@ -20,35 +31,55 @@ const localStorageMock = (() => {
   };
 })();
 
-// Override Node's native localStorage
+/**
+ * Override Node's native localStorage
+ */
 vi.stubGlobal("localStorage", localStorageMock);
 
-// Clean up
+/**
+ * clean initial state before each test and set up console spies to catch warnings and errors.
+ */
 beforeEach(() => {
   localStorage.clear();
-  consoleWatchdog = vi.spyOn(console, "warn");
+  consoleWarnWatchdog = vi.spyOn(console, "warn");
+  consoleErrorWatchdog = vi.spyOn(console, "error");
 });
 
+/**
+ * After each test, check for any Vue warnings or console errors that occurred during component mounting.
+ * If any warnings or errors are detected, fail the test and print the relevant messages for debugging.
+ */
 afterEach(({ task }) => {
-  if (!consoleWatchdog) return;
+  if (!consoleWarnWatchdog) return;
 
-  // Grab all warnings
-  const warnings = consoleWatchdog.mock.calls;
+  /** Grab all warnings */
+  const warnings = consoleWarnWatchdog.mock.calls;
 
-  // Clean up the spy so it doesn't leak
-  consoleWatchdog.mockRestore();
+  /** Clean up the spy so it doesn't leak */
+  consoleWarnWatchdog.mockRestore();
 
-  // Filter specifically for Vue warnings
+  /** Filter specifically for Vue warnings */
   const vueWarnings = warnings.filter(
     (args) => typeof args[0] === "string" && args[0].includes("[Vue warn]"),
   );
 
-  // If Vue has warns forcefully fail this test block --max-warnings=0
+  /** If Vue has warns forcefully fail this test block --max-warnings=0 */
   if (vueWarnings.length > 0) {
     const warningMessages = vueWarnings.map((args) => args.join(" ")).join("\n\n");
 
-    // Throw a plain string instead of using expect.fail() or new Error()!
-    // Without an Error object, there is no stack trace, so Vitest CANNOT show a code snippet.
+    /** Throw a plain string instead of using expect.fail() or new Error()!
+     * Without an Error object, there is no stack trace, so Vitest CANNOT show a code snippet.
+     */
     throw `[Vue warn] Failure in "${task.name}":\n\n${warningMessages}`;
+  }
+  /** Add watchdog for console.error to catch any uncaught exceptions during component mounting */
+  if (consoleErrorWatchdog) {
+    const errors = consoleErrorWatchdog.mock.calls;
+    consoleErrorWatchdog.mockRestore();
+
+    if (errors.length > 0) {
+      const errorMessages = errors.map((args) => args.join(" ")).join("\n\n");
+      throw `[Console Error] Hard crash in "${task.name}":\n\n${errorMessages}`;
+    }
   }
 });

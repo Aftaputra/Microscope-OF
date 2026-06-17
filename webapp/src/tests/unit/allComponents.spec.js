@@ -7,13 +7,23 @@ import { componentOverrides } from "./overrides";
  * @file Automated component smoke testing suite.
  * @description Iterates through all project components and performs a
  * shallow mount on each. This acts as a first line of defense to catch
- * fatal DOM runtime errors, missing dependencies, or script crashes
+ * fatal DOM runtime errors, missing dependencies, memory leaks, lifecycle or script crashes
  * before they reach production.
+ * @note CI Execution:
+ * When running this script in a CI/CD pipeline, it must be executed with strict memory
+ * safety and process isolation to handle the heavy footprint of mounting the whole set of Vue components ().
+ * The `test:unit` script implements the following safety nets:
+ * - `NODE_OPTIONS=--expose-gc` & `--logHeapUsage`: Unlocks the V8 garbage collector to aggressively clear RAM.
+ * - `--pool=forks` & `--isolate=true`: Boots a dedicated Node.js child process per file to prevent cross-DOM pollution.
+ * - `--detectAsyncLeaks`: Actively catches hanging `setIntervals` or unresolved API promises.
+ * - `--no-cache`: Bypasses Vite caching to guarantee a pristine execution environment.
+ * - `--reporter=verbose`: Forces cloud logs to print exact component names for easier debugging.
  * @requires overrides.js for component-specific prop and mock configurations.
  */
 
-/** * Vite eagerly grabs all .vue components, explicitly excluding the experimental folder.
- * * @type {Record<string, { default: any }>} A dictionary mapping file paths to their Vue component modules.
+/**
+ * Vite eagerly grabs all .vue components, explicitly excluding the experimental folder.
+ * @type {Record<string, { default: any }>} A dictionary mapping file paths to their Vue component modules.
  */
 const componentModules = import.meta.glob(
   ["../../components/**/*.vue", "!../../components/experimental/**/*.vue"],
@@ -131,25 +141,24 @@ describe("Unit Test", () => {
               initialState: override.initialState || {},
             }),
           ],
-          stubs: {},
           mocks: {
-            thingActionAvailable: vi.fn(() => true),
-            readThingProperty: vi.fn(() => ({})),
-            thingAvailable: vi.fn(() => ({})),
-            thingDescription: vi.fn(() => ({
+            readThingProperty: () => ({}),
+            thingActionAvailable: () => true,
+            thingAvailable: () => ({}),
+            thingDescription: () => ({
               actions: {},
               properties: {},
-            })),
-            thingDescriptions: vi.fn(() => ({
+            }),
+            thingDescriptions: () => ({
               test_thing: {
                 properties: {
                   test_property_1: {},
                   test_property_2: {},
                 },
               },
-            })),
-            getOngoingAction: vi.fn(() => Promise.resolve()),
-            getThingEndpoint: vi.fn(() => Promise.resolve([])),
+            }),
+            getOngoingAction: () => Promise.resolve(),
+            getThingEndpoint: () => Promise.resolve([]),
             modalError: "",
             ...(override.global?.mocks || {}),
             ...(override.mocks || {}),
