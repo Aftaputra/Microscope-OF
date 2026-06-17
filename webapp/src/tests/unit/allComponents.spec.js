@@ -110,7 +110,9 @@ describe("Unit Test", () => {
      * Look up the specific config for this file, default to an empty object
      * Override specific props
      * Inject the specific state if it exists, otherwise use empty object
-     * Mocks values come from MIXINS
+     * * Note on Global Mocks:
+     * The mock functions below stub out standard Mixin methods that typically interact with the Pinia store.
+     * These should not be moved to `overrides.js` Defining them here significantly reduces boilerplate configuration inside `overrides.js`.
      */
     const testRunner = isSkipped ? it.skip : it;
 
@@ -137,6 +139,14 @@ describe("Unit Test", () => {
             thingDescription: vi.fn(() => ({
               actions: {},
               properties: {},
+            })),
+            thingDescriptions: vi.fn(() => ({
+              test_thing: {
+                properties: {
+                  test_property_1: {},
+                  test_property_2: {},
+                },
+              },
             })),
             getOngoingAction: vi.fn(() => Promise.resolve()),
             getThingEndpoint: vi.fn(() => Promise.resolve([])),

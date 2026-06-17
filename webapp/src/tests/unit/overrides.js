@@ -13,56 +13,7 @@ export const componentOverrides = {
       propertyName: "",
       thingName: "",
     },
-    global: {
-      mocks: {
-        wotStore: {
-          thingDescriptions: {
-            test_thing: {
-              properties: {
-                test_property_1: {},
-                test_property_2: {},
-              },
-            },
-          },
-        },
-      },
-    },
   },
-
-  "slideScanContent.vue": {
-    global: {
-      mocks: {
-        wotStore: {
-          thingDescriptions: {
-            test_thing: {
-              properties: {
-                test_property_1: {},
-                test_property_2: {},
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-
-  "slideScanControls.vue": {
-    global: {
-      mocks: {
-        wotStore: {
-          thingDescriptions: {
-            test_thing: {
-              properties: {
-                test_property_1: {},
-                test_property_2: {},
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-
   "miniStreamDisplay.vue": {
     props: { streamId: "testProp" },
   },
@@ -112,7 +63,6 @@ export const componentOverrides = {
   "inputFromSchema.vue": {
     props: { dataSchema: {} },
   },
-
   "propertyControl.vue": {
     props: {
       propertyName: "",
@@ -172,17 +122,5 @@ export const componentOverrides = {
   },
   "cameraCalibrationSettings.vue": {
     props: { cameraUri: "" },
-  },
-
-  "CSMCalibrationSettings.vue": {
-    global: {
-      mocks: {
-        thingDescriptions: {
-          csm: {
-            actions: {},
-          },
-        },
-      },
-    },
   },
 };
