@@ -1,25 +1,55 @@
 <template>
-  <div class="log-wrapper" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
-    <div ref="logContainer" class="log-container uk-margin-left uk-margin-right uk-margin">
-      <div v-if="log">
-        <div v-for="(item, index) in log" :key="`log_entry_${index}`">
-          {{ item.message }}
-        </div>
-      </div>
-      <div v-if="taskStatus == 'error'" class="uk-alert uk-alert-danger">
-        <p><b>The task failed due to an error:</b></p>
-        <p>{{ errorMessage }}</p>
-      </div>
-      <div v-if="taskStatus == 'cancelled'" class="uk-alert uk-alert-warning">
-        The task was cancelled.
-      </div>
-      <div v-if="taskStatus == 'completed'" class="uk-alert uk-alert-success">
-        The task completed successfully.
-      </div>
+  <div class="action-log-display">
+    <!-- Toggle button -->
+    <button
+      v-if="log.length"
+      class="log-toggle"
+      :title="isCollapsed ? 'Show full log' : 'Hide full log'"
+      :aria-label="isCollapsed ? 'Show full log' : 'Hide full log'"
+      @click="toggleLog"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">
+        {{ isCollapsed ? "expand_more" : "expand_less" }}
+      </span>
+    </button>
 
-      <!-- Paused banner outside scroll container, positioned relative to wrapper -->
-      <div v-if="userIsHovering" class="paused-banner">Auto-scroll paused</div>
+    <!-- Header always shows latest message-->
+    <div class="log-summary">
+      <span v-if="latestMessage">
+        {{ latestMessage }}
+      </span>
     </div>
+
+    <!-- Expanded view shows log -->
+    <transition name="log-fade">
+      <div
+        v-if="!isCollapsed"
+        class="log-wrapper"
+        @mouseenter="onMouseEnter"
+        @mouseleave="onMouseLeave"
+      >
+        <div ref="logContainer" class="log-container uk-margin-left uk-margin-right uk-margin">
+          <div v-if="log">
+            <div v-for="(item, index) in log" :key="`log_entry_${index}`">
+              {{ item.message }}
+            </div>
+          </div>
+          <div v-if="taskStatus === 'error'" class="uk-alert uk-alert-danger">
+            <p><b>The task failed due to an error:</b></p>
+            <p>{{ errorMessage }}</p>
+          </div>
+          <div v-if="taskStatus == 'cancelled'" class="uk-alert uk-alert-warning">
+            The task was cancelled.
+          </div>
+          <div v-if="taskStatus == 'completed'" class="uk-alert uk-alert-success">
+            The task completed successfully.
+          </div>
+        </div>
+
+        <!-- Paused banner outside scroll container, positioned relative to wrapper -->
+        <div v-if="userIsHovering" class="paused-banner">Auto-scroll paused</div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -36,15 +66,28 @@ export default {
       type: Array,
       required: true,
     },
+    collapsedByDefault: {
+      type: Boolean,
+      default: true,
+    },
   },
 
   data() {
     return {
       userIsHovering: false,
+      isCollapsed: this.collapsedByDefault,
     };
   },
 
   computed: {
+    latestMessage() {
+      if (!this.log.length) {
+        return "";
+      }
+
+      return this.log[this.log.length - 1].message;
+    },
+
     errorMessage() {
       let logLength = this.log.length;
       var defaultMessage = "Unexpected error, please check the logs";
@@ -62,18 +105,33 @@ export default {
   watch: {
     log: {
       handler() {
-        this.scrollToBottom();
+        if (!this.isCollapsed) {
+          this.scrollToBottom();
+        }
       },
       deep: true,
     },
-    taskStatus: {
-      handler() {
+
+    taskStatus() {
+      if (!this.isCollapsed) {
         this.scrollToBottom();
-      },
+      }
+    },
+
+    collapsedByDefault(newValue) {
+      this.isCollapsed = newValue;
     },
   },
 
   methods: {
+    toggleLog() {
+      this.isCollapsed = !this.isCollapsed;
+
+      if (!this.isCollapsed) {
+        this.scrollToBottom();
+      }
+    },
+
     onMouseEnter() {
       this.userIsHovering = true;
     },
@@ -95,16 +153,34 @@ export default {
 </script>
 
 <style scoped>
+/* Expanded view */
 .log-wrapper {
   position: relative;
   height: 200px;
   overflow: hidden;
-  margin-bottom: 1em;
-  margin-top: 1em;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.action-log-display {
+  width: 100%;
+  position: relative;
+  height: 90%;
+}
+
+.log-summary {
+  padding: 1em;
+  padding-right: 2.5em; /* reserve room for the toggle button, prevents overlap */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: large;
+  box-sizing: border-box;
 }
 
 .log-container {
-  height: 100%;
+  height: 90%;
   overflow: auto;
   background-color: white;
   color: black;
@@ -127,5 +203,44 @@ export default {
   pointer-events: none;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
   background-color: white;
+}
+
+/* Toggle button */
+.log-toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: var(--uk-inverse-color, inherit); /*get the colour of the text from ui-kit*/
+}
+
+.material-symbols-outlined {
+  font-size: 28px;
+  color: inherit; /* inherit from .log-toggle so it tracks the theme color */
+}
+
+/* Handles the entire animation, from either enter-from or leave-to */
+.log-fade-enter-active,
+.log-fade-leave-active {
+  transition:
+    max-height 0.25s ease,
+    opacity 0.25s ease;
+  overflow: hidden;
+}
+
+/* The collapsed part of the animation, whether at the start or end */
+.log-fade-enter-from,
+.log-fade-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* The expanded part of the animation, whether at the start or end */
+.log-fade-enter-to,
+.log-fade-leave-from {
+  max-height: 200px;
+  opacity: 1;
 }
 </style>
