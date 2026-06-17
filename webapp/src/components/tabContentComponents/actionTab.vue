@@ -219,8 +219,4 @@ export default {
 .control-component {
   width: 33%;
 }
-
-#log-display {
-  height: 20em;
-}
 </style>
