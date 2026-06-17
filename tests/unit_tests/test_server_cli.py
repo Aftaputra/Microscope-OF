@@ -109,14 +109,20 @@ def test_failed_customise(mocker):
     # An that it has the error to display
     assert str(fallback_app._context.error) == "Can't touch this"
 
-
 def test_debug_mode(mocker):
     """Test that --debug flag triggers lt.logs.configure_thing_logger."""
-    # Mock the LabThings function that returns the server
+
+    # Use a side_effect to map the CLI debug arg to the mock server's debug attribute
+    def mock_from_config(_, debug_flag):
+        mock_server = mocker.Mock()
+        mock_server.debug = debug_flag  # This will now be correctly True or False
+        return mock_server
+
     mocker.patch(
         "openflexure_microscope_server.server.lt.ThingServer.from_config",
-        return_value=mocker.Mock(),
+        side_effect=mock_from_config,
     )
+
     # Mock customisation dependencies to avoid side effects
     mocker.patch.object(ofm_server, "add_v2_endpoints")
     mocker.patch.object(ofm_server, "add_static_files")
