@@ -23,17 +23,26 @@ LOGGER = logging.getLogger(__name__)
 OFM_LOG_FILE: Optional[str] = None
 
 
-def configure_logging(log_folder: str) -> None:
+def configure_logging(log_folder: str, debug: bool = False) -> None:
     """Configure logging for the server while it is running.
 
-    This modifies the root logger to have a rotating file handler and
+    Params:
+    - log_folder: This modifies the root logger to have a rotating file handler and
     adds a custom handler that prints and stores all records except
     ``uvicorn.access`` logs.
+    - debug: This modifies the root logger to change its logging level. It is
+    set to True by starting the server with the cli argument ``--debug``.
 
     It is important not to let Uvicorn override these settings.
+
     """
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+
+    if debug:
+        root_logger.setLevel(logging.DEBUG)
+    else:
+        root_logger.setLevel(logging.INFO)
+
     # Explicitly make OFM_LOG_FILE a global so it can be updated based on log settings
     # This requires silencing PLW0603 which disallows globals.
     global OFM_LOG_FILE  # noqa: PLW0603
@@ -44,6 +53,7 @@ def configure_logging(log_folder: str) -> None:
     ofm_format_str = "[%(asctime)s] [%(levelname)s] %(message)s"
     OFM_HANDLER.setFormatter(logging.Formatter(ofm_format_str))
     OFM_HANDLER.addFilter(UvicornAccessFilter())
+    OFM_HANDLER.level = root_logger.level
     root_logger.addHandler(OFM_HANDLER)
 
     try:
@@ -63,7 +73,10 @@ def configure_logging(log_folder: str) -> None:
     except PermissionError as e:
         LOGGER.error(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
 
-    LOGGER.info("OFM server root logger has been set up at INFO level")
+    LOGGER.info(
+        "OFM server root logger has been set up at %s level",
+        logging.getLevelName(root_logger.level),
+    )
 
 
 def retrieve_log() -> PlainTextResponse:

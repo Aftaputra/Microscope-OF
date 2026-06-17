@@ -72,7 +72,7 @@ def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
 
 
 def customise_server(
-    server: lt.ThingServer, application_config: OFMApplicationData, debug: bool = False
+    server: lt.ThingServer, application_config: OFMApplicationData
 ) -> None:
     """Customise the server with additional endpoints, debug mode etc."""
     if DEVELOPER_MODE:
@@ -87,10 +87,6 @@ def customise_server(
 
     add_v2_endpoints(server)
     add_static_files(server, application_config.data_folder)
-
-    # Configure logging to DEBUG if requested in CLI args.
-    if debug:
-        lt.logs.configure_thing_logger(logging.DEBUG)
 
     # Add an endpoint to get the logs - (directly calling the FastAPI decorator)
     server.app.get(str(server.api_prefix.rstrip("/")) + "/log/")(retrieve_log)
@@ -113,15 +109,15 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
     server = None
     try:
         lt_config = _full_config_from_args(args)
+        debug = bool(args.debug)
         # Validate our application data
         if lt_config.application_config is None:
             raise ValueError("No application configuration was supplied.")
         application_config = OFMApplicationData(**lt_config.application_config)
-        configure_logging(application_config.log_folder)
+        configure_logging(application_config.log_folder, debug)
 
-        server = lt.ThingServer.from_config(lt_config)
-        debug = bool(args.debug)
-        customise_server(server, application_config, debug)
+        server = lt.ThingServer.from_config(lt_config, debug)
+        customise_server(server, application_config)
 
         def shutdown_call() -> None:
             try:

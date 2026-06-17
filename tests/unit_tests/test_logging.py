@@ -206,3 +206,31 @@ def test_uvicorn_error_only_says_error_on_error(
             assert name in log_txt
         for name in names_not_in_log:
             assert name not in log_txt
+
+
+@pytest.mark.parametrize(
+    ("debug_flag", "expected_level"),
+    [
+        (False, logging.INFO),
+        (True, logging.DEBUG),
+    ],
+)
+def test_configure_logging_debug_mode(debug_flag, expected_level):
+    """Check that debug flag sets the correct root and handler logging levels."""
+    # Reset handler at start of test
+    ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
+
+    with tmp_logging_dir() as tmpdir:
+        # Run configuration with the parameterised debug flag
+        ofm_logging.configure_logging(tmpdir, debug=debug_flag)
+
+        root_logger = logging.getLogger()
+
+        # Assert the root logger level was set correctly
+        assert root_logger.level == expected_level
+        # Assert the custom OFM handler level was synced to the root logger
+        assert ofm_logging.OFM_HANDLER.level == expected_level
+
+        # Cleanup: Remove the OFM_HANDLER from the root logger so it doesn't
+        # interfere with other tests in the suite.
+        root_logger.removeHandler(ofm_logging.OFM_HANDLER)
