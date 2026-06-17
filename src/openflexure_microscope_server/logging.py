@@ -73,7 +73,10 @@ def configure_logging(log_folder: str, debug: bool = False) -> None:
     except PermissionError as e:
         LOGGER.error(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
 
-    LOGGER.info("OFM server root logger has been set up at %s level", logging.getLevelName(root_logger.level))
+    LOGGER.info(
+        "OFM server root logger has been set up at %s level",
+        logging.getLevelName(root_logger.level),
+    )
 
 
 def retrieve_log() -> PlainTextResponse:

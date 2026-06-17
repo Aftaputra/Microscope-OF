@@ -27,6 +27,8 @@ The simulation server GUI is a copy of the GUI you would find on the hardware wi
 
 This can fail with an error that the chosen port is already in use. In that case, append `--port 8081`
 
+> Note: If you would like more detailed logging information from both the OpenFlexure Microscope server and the LabThings server, you can add the `--debug` argument to the end of the above command to activate `DEBUG` level logs.
+
 ---
 
 ## Video Walkthrough

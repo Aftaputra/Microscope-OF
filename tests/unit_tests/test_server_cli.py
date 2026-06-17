@@ -112,42 +112,35 @@ def test_failed_customise(mocker):
 
 def test_debug_mode(mocker):
     """Test that --debug flag triggers lt.logs.configure_thing_logger."""
-
-    # Use a side_effect to map the CLI debug arg to the mock server's debug attribute
-    def mock_from_config(_, debug_flag):
-        mock_server = mocker.Mock()
-        mock_server.debug = debug_flag  # This will now be correctly True or False
-        return mock_server
-
-    mocker.patch(
+    # Mock the LabThings server creation so we can inspect its arguments
+    mock_from_config = mocker.patch(
         "openflexure_microscope_server.server.lt.ThingServer.from_config",
-        side_effect=mock_from_config,
+        return_value=mocker.Mock(),
     )
 
-    # Mock customisation dependencies to avoid side effects
-    mocker.patch.object(ofm_server, "add_v2_endpoints")
-    mocker.patch.object(ofm_server, "add_static_files")
-    # Mock logging to avoid side effects and allow checking calls
-    mocker.patch.object(ofm_server, "configure_logging")
-    mocker.patch.object(ofm_server, "retrieve_log")
-    mocker.patch.object(ofm_server, "retrieve_log_from_file")
-    # Mock uvicorn.run to avoid starting a server
+    # Mock configure_logging to inspect its arguments and prevent side effects
+    mock_configure_logging = mocker.patch.object(ofm_server, "configure_logging")
+
+    # Mock other dependencies to avoid side effects (file writing, server starting)
+    mocker.patch.object(ofm_server, "customise_server")
     mocker.patch("openflexure_microscope_server.server.uvicorn.run")
-
-    # Mock the target function
-    mock_configure_thing_logger = mocker.patch(
-        "openflexure_microscope_server.server.lt.logs.configure_thing_logger"
-    )
 
     # 1. Run with --debug
     ofm_server.serve_from_cli(["-c", SIM_CONFIG, "--debug"])
 
-    # Verify it was called with DEBUG level
-    mock_configure_thing_logger.assert_called_once_with(logging.DEBUG)
+    # Verify configure_logging was called with debug=True (the second argument)
+    assert mock_configure_logging.call_args.args[1] is True
+    # Verify ThingServer.from_config was called with debug=True (the second argument)
+    assert mock_from_config.call_args.args[1] is True
+
+    # Reset the mocks for the next run
+    mock_configure_logging.reset_mock()
+    mock_from_config.reset_mock()
 
     # 2. Run without --debug
-    mock_configure_thing_logger.reset_mock()
     ofm_server.serve_from_cli(["-c", SIM_CONFIG])
 
-    # Verify it was NOT called
-    mock_configure_thing_logger.assert_not_called()
+    # Verify configure_logging was called with debug=False
+    assert mock_configure_logging.call_args.args[1] is False
+    # Verify ThingServer.from_config was called with debug=False
+    assert mock_from_config.call_args.args[1] is False

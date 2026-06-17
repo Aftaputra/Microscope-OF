@@ -71,6 +71,8 @@ sudo -u openflexure-ws application/openflexure-microscope-server/.venv/bin/openf
 
 ```
 
+> Note: If you would like more detailed logging information from both the OpenFlexure Microscope server and the LabThings server, you can add the `--debug` argument to the end of the above command to activate `DEBUG` level logs.
+
 ### Running the simulation server on other platforms
 
 To start the simulation server:
@@ -80,6 +82,8 @@ To start the simulation server:
 * Run the following command:
 
 `openflexure-microscope-server --fallback -c ./ofm_config_simulation.json`
+
+> Note: If you would like more detailed logging information from both the OpenFlexure Microscope server and the LabThings server, you can add the `--debug` argument to the end of the above command to activate `DEBUG` level logs.
 
 * Open the address displayed in the terminal in any browser.
 * To close the simulation server, return to the terminal and press `ctrl + c`.
