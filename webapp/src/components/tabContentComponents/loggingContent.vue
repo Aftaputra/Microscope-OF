@@ -121,7 +121,7 @@ export default {
     ...mapState(useSettingsStore, ["baseUri"]),
     filteredLevels: function () {
       let cutoffIndex = this.allLevels.indexOf(this.filterLevel);
-      return this.allLevels.slice(cutoffIndex, -1);
+      return this.allLevels.slice(cutoffIndex);
     },
     filteredItems: function () {
       var items = [];

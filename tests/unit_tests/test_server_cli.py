@@ -109,6 +109,7 @@ def test_failed_customise(mocker):
     # An that it has the error to display
     assert str(fallback_app._context.error) == "Can't touch this"
 
+
 def test_debug_mode(mocker):
     """Test that --debug flag triggers lt.logs.configure_thing_logger."""
 
