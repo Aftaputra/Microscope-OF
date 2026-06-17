@@ -31,7 +31,7 @@ def configure_logging(log_folder: str, debug: bool = False) -> None:
     adds a custom handler that prints and stores all records except
     ``uvicorn.access`` logs.
     - debug: This modifies the root logger to change its logging level. It is
-    set to True by starting the server with the cli argument `--debug`.
+    set to True by starting the server with the cli argument ``--debug``.
 
     It is important not to let Uvicorn override these settings.
 
