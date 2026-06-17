@@ -213,7 +213,7 @@ export default {
   background: transparent;
   border: none;
   padding: 4px;
-  color: var(--uk-inverse-color, inherit); /*get the colour of the text from ui-kit*/
+  color: var(--uk-inverse-color, inherit); /* get the colour of the text from ui-kit */
 }
 
 .material-symbols-outlined {
