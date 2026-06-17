@@ -156,20 +156,26 @@ export default {
 /* Expanded view */
 .log-wrapper {
   position: relative;
-  height: 200px;
+  flex: 1 1 200px; /* prefer 200px, but shrink if the container runs out of room */
+  min-height: 2.6em; /* hard floor: roughly two lines of text */
   overflow: hidden;
   margin-bottom: 0;
   margin-top: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .action-log-display {
   width: 100%;
   position: relative;
-  height: 90%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .log-summary {
-  padding: 1em;
+  padding: 0.6em;
   padding-right: 2.5em; /* reserve room for the toggle button, prevents overlap */
   display: flex;
   align-items: center;
@@ -180,7 +186,8 @@ export default {
 }
 
 .log-container {
-  height: 90%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   background-color: white;
   color: black;

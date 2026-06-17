@@ -110,6 +110,7 @@ export default {
   place-content: stretch flex-start;
   align-items: center;
   width: 100%;
+  flex: 0 0 auto;
 }
 
 #progress-and-cancel-row .stretchy {
@@ -130,7 +131,23 @@ export default {
   flex-direction: column;
 }
 
+#status-modal h2 {
+  flex: 0 0 auto; // title never shrinks
+}
+
+#status-modal .action-log-display {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#status-modal .log-wrapper {
+  flex: 1 1 200px; // prefer 200px, shrink only under pressure
+  min-height: 2.6em; // floor: one line
+}
+
 #status-modal .log-container {
-  height: 10em;
+  height: auto;
+  flex: 1 1 auto;
+  min-height: 2.6em;
 }
 </style>
