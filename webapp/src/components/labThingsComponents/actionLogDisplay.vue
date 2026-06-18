@@ -2,7 +2,6 @@
   <div class="action-log-display">
     <!-- Toggle button -->
     <button
-      v-if="log.length"
       class="log-toggle"
       :title="isCollapsed ? 'Show full log' : 'Hide full log'"
       :aria-label="isCollapsed ? 'Show full log' : 'Hide full log'"
@@ -15,9 +14,15 @@
 
     <!-- Header always shows latest message-->
     <div class="log-summary">
-      <span v-if="latestMessage">
+      <div v-if="latestMessage">
         {{ latestMessage }}
-      </span>
+      </div>
+      <div v-else-if="taskStatus === 'error'">
+        <p>The task failed due to an error:</p>
+        <p>{{ errorMessage }}</p>
+      </div>
+      <div v-else-if="taskStatus == 'cancelled'">The task was cancelled.</div>
+      <div v-else-if="taskStatus == 'completed'">The task completed successfully.</div>
     </div>
 
     <!-- Expanded view shows log -->
@@ -175,8 +180,8 @@ export default {
 }
 
 .log-summary {
-  padding: 0.6em;
-  padding-right: 2.5em; /* reserve room for the toggle button, prevents overlap */
+  padding: 2px;
+  padding-right: 30px; /* reserve room for the toggle button, prevents overlap */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -215,8 +220,8 @@ export default {
 /* Toggle button */
 .log-toggle {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 0;
+  right: 2px;
   background: transparent;
   border: none;
   padding: 4px;
