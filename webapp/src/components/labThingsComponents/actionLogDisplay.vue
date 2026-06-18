@@ -14,15 +14,20 @@
 
     <!-- Header always shows latest message-->
     <div class="log-summary">
-      <div v-if="latestMessage">
+      <div v-if="latestMessage" class="log-summary-text">
         {{ latestMessage }}
       </div>
-      <div v-else-if="taskStatus === 'error'">
+      <div v-else-if="taskStatus === 'error'" class="log-summary-text">
         <p>The task failed due to an error:</p>
         <p>{{ errorMessage }}</p>
+        <p>{{ errorMessage }}</p>
       </div>
-      <div v-else-if="taskStatus == 'cancelled'">The task was cancelled.</div>
-      <div v-else-if="taskStatus == 'completed'">The task completed successfully.</div>
+      <div v-else-if="taskStatus == 'cancelled'" class="log-summary-text">
+        The task was cancelled.
+      </div>
+      <div v-else-if="taskStatus == 'completed'" class="log-summary-text">
+        The task completed successfully.
+      </div>
     </div>
 
     <!-- Expanded view shows log -->
@@ -182,12 +187,20 @@ export default {
 .log-summary {
   padding: 2px;
   padding-right: 30px; /* reserve room for the toggle button, prevents overlap */
-  display: flex;
+  display: block;
   align-items: center;
-  justify-content: center;
+}
+
+.log-summary-text {
   text-align: center;
   font-size: large;
-  box-sizing: border-box;
+  min-height: calc(2 * 1.4em); /* ALWAYS reserve 2 lines */
+  line-height: 1.4em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2; /* Future version of webkit-line-clamp, not fully supported yet */
 }
 
 .log-container {
