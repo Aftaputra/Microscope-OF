@@ -196,6 +196,7 @@ export default {
   font-size: large;
   min-height: calc(2 * 1.4em); /* ALWAYS reserve 2 lines */
   line-height: 1.4em;
+  padding: 0px 5px; /* Give some padding so there's room for ... to not expand too far */
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
