@@ -35,6 +35,16 @@
       </div>
     </nav>
 
+    <div class="uk-width-xlarge uk-align-center">
+      <div v-if="filteredItems.length == 0" class="uk-alert-primary" uk-alert>
+        <p>
+          No log entries found at the current filter level (<strong>{{ filterLevel }}</strong> or
+          higher).
+        </p>
+        <p>You can include lower levels using the dropdown in the top left.</p>
+      </div>
+    </div>
+
     <!-- Logging items -->
     <div class="uk-width-xlarge uk-align-center">
       <div
@@ -81,6 +91,7 @@
         <!-- eslint-enable -->
       </div>
       <PaginateLinks
+        v-if="filteredItems.length > 0"
         :total-pages="totalPages"
         :current-page="currentPage"
         @change-page="changePage"
