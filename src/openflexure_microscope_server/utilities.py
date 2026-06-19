@@ -9,6 +9,7 @@ import tomllib
 from datetime import datetime
 from functools import wraps
 from importlib.metadata import version
+from pathlib import PurePath
 from typing import (
     Any,
     Callable,
@@ -80,6 +81,10 @@ def requires_lock(
 _WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\ \\]")
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \, space
 _POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/ ]")
+
+UNSAFE_PATTERN = (
+    _WINDOWS_UNSAFE_PATTERN if sys.platform.startswith("win") else _POSIX_UNSAFE_PATTERN
+)
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -
 _NAME_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-]")
 
@@ -110,97 +115,98 @@ _WINDOWS_RESERVED_NAMES = {
 }
 
 
-def is_path_safe(unsafe_path_string: str) -> bool:
+def is_path_safe(unvalidated_path: str) -> bool:
     """Check if a file path has any unsafe elements in it.
 
     The path is not coerced into a safe form because if we ask
     for a file to be written to a location we shouldn't be changing
     that location as we have no "consent" to write to this other location.
 
-    :param unsafe_path_string: The original path string to sanitise.
+    :param unvalidated_path: The original path string to sanitise.
 
     :returns: A boolean indicating if any unsafe features were found.
     """
-    # Split by separators first to sanitise components independently
-
-    components = re.split(r"([/\\])", unsafe_path_string)
-
-    unsafe_character_pattern = (
-        _WINDOWS_UNSAFE_PATTERN
-        if sys.platform.startswith("win")
-        else _POSIX_UNSAFE_PATTERN
+    return all(
+        [
+            _path_normalised(unvalidated_path),
+            _no_trailing_dots_or_whitespaces(unvalidated_path),
+            _no_unsafe_characters(unvalidated_path),
+            _no_reserved_name(unvalidated_path),
+        ]
     )
 
-    # Ensure each warning only gets logged once per path
-    unsafe_relative_path = False
-    trailing_dots = False
-    trailing_whitespace = False
-    unsafe_characters = False
-    reserved_word = False
 
-    for i, component in enumerate(components):
-        # Skip separators and empty strings
-        if component in ("/", "\\") or not component:
+def _path_normalised(unvalidated_path: str) -> bool:
+    """Check that the path starts normalised.
+
+    Warn and return false if . or .. is not at the start of the path.
+    """
+    original_path = unvalidated_path
+    # Ensure correct path separators before normalisation:
+    if sys.platform.startswith("win"):
+        unvalidated_path = unvalidated_path.replace("/", "\\")
+    normalised = os.path.normpath(unvalidated_path)
+
+    # Allow starting with ./ (or .\ on Windows)
+    if unvalidated_path.startswith("." + os.path.sep):
+        normalised = "." + os.path.sep + normalised
+
+    # Allow trailing path separator
+    if unvalidated_path.endswith(os.path.sep):
+        normalised += os.path.sep
+
+    if normalised != unvalidated_path:
+        LOGGER.warning(
+            f"File path {original_path} may be unsafe due to unexpected relative "
+            "navigation."
+        )
+        return False
+    return True
+
+
+def _no_trailing_dots_or_whitespaces(unvalidated_path: str) -> bool:
+    """Disallow trailing dots or whitespace."""
+    # Use PurePath from Python's standard library to iterate over each element
+    # in the path as separated by path separators. For example:
+    # "foo/bar/tada.py" -> ("foo", "bar", "tada.py")
+    for component in PurePath(unvalidated_path).parts:
+        if component == "..":
             continue
-
-        # 1. Check for relative paths in the wrong place
-        if component in (".", "..") and not unsafe_relative_path:
-            is_first = i == 0
-            is_second = (
-                i == 2
-                and components[i - 1] in ("/", "\\")
-                and components[i - 2] == ".."
-            )
-            if not (is_first or is_second):
-                LOGGER.warning(
-                    f"File path {unsafe_path_string} may be unsafe due to unexpected relative navigation."
-                )
-                unsafe_relative_path = True
-            continue
-
-        # 2. Check for trailing dots in path
-        if "." in component and i != len(components) - 1 and not trailing_dots:
-            # Check for trailing dots in the file path before the file name
-            # e.g.: foo/bar./file is bad, but foo/bar.file.py is fine
+        bad_trailing_chars = ". " if sys.platform.startswith("win") else "."
+        if component.rstrip(bad_trailing_chars) != component:
             LOGGER.warning(
-                f"File path {unsafe_path_string} may be unsafe due to trailing dots."
+                f"File path {unvalidated_path} may be unsafe due to trailing dots "
+                "or whitespace."
             )
-            trailing_dots = True
+            return False
+    # All passed
+    return True
 
-        # Check for trailing spaces - Windows specific
-        if (
-            sys.platform.startswith("win")
-            and component.endswith(" ")
-            and not trailing_whitespace
-        ):
-            LOGGER.warning(f"{unsafe_path_string} contains unsafe trailing spaces.")
-            trailing_whitespace = True
 
-        # 3. Check for unsafe characters (Regex)
-        if unsafe_character_pattern.search(component) and not unsafe_characters:
+def _no_unsafe_characters(unvalidated_path: str) -> bool:
+    """Disallow unsafe characters."""
+    for component in PurePath(unvalidated_path).parts:
+        if UNSAFE_PATTERN.search(component):
             LOGGER.warning(
-                f"{unsafe_path_string} contains characters that may be unsafe on this platform."
+                f"{unvalidated_path} contains characters that may be unsafe on this "
+                "platform."
             )
-            unsafe_characters = True
+            return False
+    # All passed
+    return True
 
-        # 4. Check for Reserved Names (e.g., CON, PRN, LPT1)
-        # Assuming _sanitise_reserved returns a different string if it's a reserved name
-        if (
-            _sanitise_reserved(component, is_filename=False) != component
-            and not reserved_word
-        ):
+
+def _no_reserved_name(unvalidated_path: str) -> bool:
+    """Disallow use of Windows reserved names (e.g., CON, PRN, LPT1)."""
+    for component in PurePath(unvalidated_path).parts:
+        if _sanitise_reserved(component, is_filename=False) != component:
             LOGGER.warning(
-                f"{unsafe_path_string} contains a reserved system name and may cause issues."
+                f"{unvalidated_path} contains a reserved system name and may cause "
+                "issues."
             )
-            reserved_word = True
-
-    return not (
-        unsafe_relative_path
-        or trailing_dots
-        or trailing_whitespace
-        or unsafe_characters
-        or reserved_word
-    )
+            return False
+    # All passed
+    return True
 
 
 def make_name_safe(unsafe_name_string: str) -> str:

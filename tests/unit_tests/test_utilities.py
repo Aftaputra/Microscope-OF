@@ -11,7 +11,9 @@ from openflexure_microscope_server.utilities import (
     make_name_safe,
 )
 
-PATHS_WITH_DOTS = {"a./b/c.", "path./to/file.", "./path./to/file."}
+BAD_PATHS_WITH_DOTS = {"a./b/c.", "path./to/file.", "./path./to/file."}
+
+GOOD_PATHS_WITH_DOTS = {"a.a/b/.c", "path.to/file.file.file", "./path.to/file.files"}
 
 PATHS_WITH_SPACES = {"path /to /file ", "path/to /file", "path/a long path name /file"}
 
@@ -130,7 +132,10 @@ def test_is_path_safe_trailing_space_in_components(caplog, path):
         if sys.platform.startswith("win"):
             assert not is_path_safe(path)
             assert len(caplog.records) == 1
-            assert f"{path} contains unsafe trailing spaces." in caplog.messages
+            assert (
+                f"File path {path} may be unsafe due to trailing dots or whitespace."
+                in caplog.messages
+            )
         else:
             # Trailing spaces allows in POSIX systems
             assert is_path_safe(path)
@@ -158,12 +163,20 @@ def test_is_path_safe_relative(caplog):
         )
 
 
-@pytest.mark.parametrize("filepath", PATHS_WITH_DOTS)
-def test_is_path_safe_dots_warning(caplog, filepath):
+@pytest.mark.parametrize("filepath", BAD_PATHS_WITH_DOTS)
+def test_is_path_safe_with_trailing_dots_warning(caplog, filepath):
     """Test that a user is warned about trailing dots in their file paths. The paths should remain unchanged."""
     with caplog.at_level(logging.WARNING):
         assert not is_path_safe(filepath)
         assert (
-            f"File path {filepath} may be unsafe due to trailing dots."
+            f"File path {filepath} may be unsafe due to trailing dots or whitespace."
             in caplog.messages
         )
+
+
+@pytest.mark.parametrize("filepath", GOOD_PATHS_WITH_DOTS)
+def test_is_path_safe_allowed_dots_warning(caplog, filepath):
+    """Test that a user is warned about trailing dots in their file paths. The paths should remain unchanged."""
+    with caplog.at_level(logging.WARNING):
+        assert is_path_safe(filepath)
+        assert len(caplog.records) == 0
