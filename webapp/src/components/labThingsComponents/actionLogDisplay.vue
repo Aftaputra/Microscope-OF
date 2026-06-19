@@ -12,21 +12,32 @@
       </span>
     </button>
 
-    <!-- Header always shows latest message-->
+    <!-- Header always shows latest message -->
     <div class="log-summary">
-      <div v-if="latestMessage" class="log-summary-text">
-        {{ latestMessage }}
-      </div>
-      <div v-else-if="taskStatus === 'error'" class="log-summary-text">
-        <p>The task failed due to an error:</p>
-        <p>{{ errorMessage }}</p>
-        <p>{{ errorMessage }}</p>
-      </div>
-      <div v-else-if="taskStatus == 'cancelled'" class="log-summary-text">
-        The task was cancelled.
-      </div>
-      <div v-else-if="taskStatus == 'completed'" class="log-summary-text">
-        The task completed successfully.
+      <div class="log-summary-text">
+        <template v-if="taskStatus === 'error'">
+          <p>The task failed due to an error:</p>
+          <p>{{ errorMessage }}</p>
+        </template>
+
+        <template v-else-if="taskStatus == 'cancelled'"> The task was cancelled. </template>
+
+        <template v-else-if="taskStatus == 'completed'">
+          The task completed successfully.
+        </template>
+
+        <template
+          v-if="
+            latestMessage &&
+            (taskStatus === 'error' || taskStatus === 'cancelled' || taskStatus === 'completed')
+          "
+        >
+          <br />
+        </template>
+
+        <template v-if="latestMessage">
+          {{ latestMessage }}
+        </template>
       </div>
     </div>
 
@@ -194,9 +205,9 @@ export default {
 .log-summary-text {
   text-align: center;
   font-size: large;
-  min-height: calc(2 * 1.4em); /* ALWAYS reserve 2 lines */
+  height: calc(2 * 1.4em); /* height of element is 2 lines */
   line-height: 1.4em;
-  padding: 0px 5px; /* Give some padding so there's room for ... to not expand too far */
+  padding: 0 5px; /* Give some padding so there's room for ... to not expand too far */
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
