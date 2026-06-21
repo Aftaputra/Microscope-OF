@@ -36,7 +36,7 @@ const componentModules = import.meta.glob(
 const skipList = ["loggingContent.vue"];
 
 /**
- * Test description this is a fast unit test
+ * Test description: this is a fast unit test
  * The objective of this testing is find early
  * component loading issues like bad component setups
  */
