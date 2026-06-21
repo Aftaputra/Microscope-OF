@@ -298,8 +298,8 @@ class BaseCamera(OFMThing, ABC):
         """The schema (BaseModel) for passing data to the gallery."""
         return CaptureInfo
 
-    def get_data_for_gallery(self) -> list[CaptureInfo]:
-        """Return all the information about the saved captures."""
+    def _all_captures(self) -> list[str]:
+        """Return the full path for all captures on disk."""
         files = os.listdir(self._data_dir)
         captures = []
         for filename in files:
@@ -308,15 +308,30 @@ class BaseCamera(OFMThing, ABC):
                 BASE_IMAGE_FORMATS["jpeg"].path_matches(filename)
                 or BASE_IMAGE_FORMATS["png"].path_matches(filename)
             ):
-                captures.append(
-                    CaptureInfo(
-                        name=filename,
-                        created=os.path.getctime(full_path),
-                        modified=os.path.getmtime(full_path),
-                        thing=self.name,
-                    )
-                )
+                captures.append(full_path)
         return captures
+
+    def get_data_for_gallery(self) -> list[CaptureInfo]:
+        """Return all the information about the saved captures."""
+        return [
+            CaptureInfo(
+                name=os.path.basename(capture),
+                created=os.path.getctime(capture),
+                modified=os.path.getmtime(capture),
+                thing=self.name,
+            )
+            for capture in self._all_captures()
+        ]
+
+    def delete_all_gallery_items(self) -> None:
+        """Delete all the captures on the microscope.
+
+        Use with extreme caution.
+        """
+        for capture in self._all_captures():
+            lt.raise_if_cancelled()
+            self.logger.info(f"Deleting: {capture}")
+            os.remove(capture)
 
     @lt.endpoint(
         "delete",

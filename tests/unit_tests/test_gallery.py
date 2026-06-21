@@ -36,6 +36,9 @@ class MinimalGalleryClass:
         """Return a list of Mock Gallery Data."""
         return [MockGalleryData(mock="mock", foobar="foobar")]
 
+    def delete_all_gallery_items(self) -> None:
+        """Mock deleting all the data."""
+
 
 class MinimalGallerySource(OFMThing, MinimalGalleryClass):
     """Minimal example of a Thing that can show data in the gallery.
@@ -59,6 +62,9 @@ class BadGallerySource(OFMThing):
     def get_data_for_gallery(self) -> list[BaseModel]:
         """Return a list of Mock Gallery Data."""
         return [MockGalleryData(mock="mock", foobar="foobar")]
+
+    def delete_all_gallery_items(self) -> None:
+        """Mock deleting all the data."""
 
 
 def test_gallery_compatible_protocol():

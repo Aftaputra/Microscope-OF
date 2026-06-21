@@ -192,6 +192,18 @@ class SmartScanThing(OFMThing):
             ongoing=ongoing_name, include_ongoing=False
         )
 
+    def delete_all_gallery_items(self) -> None:
+        """Delete all the scans on the microscope.
+
+        **This will irreversibly remove all scanned data from the microscope!**
+
+        Use with extreme caution.
+        """
+        for scan_name in self._scan_dir_manager.all_scans:
+            lt.raise_if_cancelled()
+            self.logger.info(f"Deleting: {scan_name}")
+            self._delete_scan(scan_name)
+
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
     @lt.setting
@@ -607,20 +619,6 @@ class SmartScanThing(OFMThing):
         deleted_scan_success = self._delete_scan(scan_name)
         if not deleted_scan_success:
             raise HTTPException(400, "Couldn't delete scan, check log for details")
-
-    @lt.endpoint(
-        "delete",
-        "scans",
-    )
-    def delete_all_scans(self) -> None:
-        """Delete all the scans on the microscope.
-
-        **This will irreversibly remove all scanned data from the
-        microscope!**
-        Use with extreme caution.
-        """
-        for scan_name in self._scan_dir_manager.all_scans:
-            self._delete_scan(scan_name)
 
     @lt.action
     def purge_empty_scans(self) -> None:

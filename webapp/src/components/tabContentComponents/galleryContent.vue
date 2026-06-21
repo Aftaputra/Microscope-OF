@@ -19,14 +19,19 @@
               @error="modalError"
             />
           </div>
-          <div>
-            <button
-              class="uk-button uk-button-default uk-width-1-1 gallery-button"
-              type="button"
-              @click="deleteAllScans()"
-            >
-              Delete All Scans
-            </button>
+          <div class="gallery-button">
+            <action-button
+              class="uk-width-1-1"
+              thing="gallery"
+              action="delete_all_data"
+              submit-label="Delete All"
+              :can-terminate="true"
+              :button-primary="false"
+              :modal-progress="true"
+              :requires-confirmation="true"
+              :confirmation-message="'<p>Are you sure you want to delete all gallery data from the microscope?</p><p>This is <b>irreversible</b>!</p>'"
+              @error="modalError"
+            />
           </div>
           <div>
             <button
@@ -69,11 +74,10 @@
 </template>
 
 <script>
-import axios from "axios";
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import galleryCard from "./galleryComponents/galleryCard.vue";
-import galleryModal from "./galleryComponents/galleryViewer.vue/index.js";
+import galleryModal from "./galleryComponents/galleryViewer.vue";
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
@@ -104,11 +108,6 @@ export default {
 
   computed: {
     ...mapState(useSettingsStore, ["baseUri", "ready"]),
-    scansUri() {
-      // The scans URI is currently used for creating endpoint URIs.
-      // The actual property does not exist. So allowUndefined=true
-      return this.thingPropertyUrl("smart_scan", "scans", true);
-    },
     noItems() {
       return !this.all_items || this.all_items?.length === 0;
     },
@@ -186,20 +185,6 @@ export default {
         console.error("Failed to refresh gallery items.");
         console.error(err);
         this.all_items = [];
-      }
-    },
-    async deleteAllScans() {
-      try {
-        await this.modalConfirm(
-          "Are you sure you want to delete all scans from the microscope? " +
-            "This is <b>irreversible</b>!",
-        );
-        await axios.delete(`${this.scansUri}`);
-        await this.refreshGallery();
-        this.modalNotify("Deleted all scans.");
-      } catch (e) {
-        // if the confirmation was cancelled, it's rejected with null error
-        if (e) this.modalError(e);
       }
     },
     showItem(itemData) {
