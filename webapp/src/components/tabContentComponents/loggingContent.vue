@@ -37,6 +37,16 @@
 
     <!-- Logging items -->
     <div class="uk-width-xlarge uk-align-center">
+      <div v-if="filteredItems.length == 0" class="logging-entry" uk-alert>
+        <div class="logging-entry-body">
+          <p>
+            No log entries found at the current filter level (<strong>{{ filterLevel }}</strong> or
+            higher).
+          </p>
+          <p>You can include lower levels using the dropdown in the top left.</p>
+        </div>
+      </div>
+
       <div
         v-for="item in pagedItems"
         :key="item.sequence"
@@ -81,6 +91,7 @@
         <!-- eslint-enable -->
       </div>
       <PaginateLinks
+        v-if="filteredItems.length > 0"
         :total-pages="totalPages"
         :current-page="currentPage"
         @change-page="changePage"

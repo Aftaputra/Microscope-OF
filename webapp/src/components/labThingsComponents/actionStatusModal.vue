@@ -125,29 +125,7 @@ export default {
   margin-right: 5px;
 }
 
-#status-modal {
-  max-height: 90vh; // never exceed 90% of viewport height
-  display: flex;
-  flex-direction: column;
-}
-
 #status-modal h2 {
   flex: 0 0 auto; // title never shrinks
-}
-
-#status-modal .action-log-display {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-#status-modal .log-wrapper {
-  flex: 1 1 200px; // prefer 200px, shrink only under pressure
-  min-height: 2.6em; // floor: one line
-}
-
-#status-modal .log-container {
-  height: auto;
-  flex: 1 1 auto;
-  min-height: 2.6em;
 }
 </style>

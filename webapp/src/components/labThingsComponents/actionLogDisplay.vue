@@ -2,7 +2,6 @@
   <div class="action-log-display">
     <!-- Toggle button -->
     <button
-      v-if="log.length"
       class="log-toggle"
       :title="isCollapsed ? 'Show full log' : 'Hide full log'"
       :aria-label="isCollapsed ? 'Show full log' : 'Hide full log'"
@@ -13,11 +12,33 @@
       </span>
     </button>
 
-    <!-- Header always shows latest message-->
+    <!-- Header always shows latest message -->
     <div class="log-summary">
-      <span v-if="latestMessage">
-        {{ latestMessage }}
-      </span>
+      <div class="log-summary-text">
+        <template v-if="taskStatus === 'error'">
+          <p>The task failed due to an error:</p>
+          <p>{{ errorMessage }}</p>
+        </template>
+
+        <template v-else-if="taskStatus == 'cancelled'"> The task was cancelled. </template>
+
+        <template v-else-if="taskStatus == 'completed'">
+          The task completed successfully.
+        </template>
+
+        <template
+          v-if="
+            latestMessage &&
+            (taskStatus === 'error' || taskStatus === 'cancelled' || taskStatus === 'completed')
+          "
+        >
+          <br />
+        </template>
+
+        <template v-if="latestMessage">
+          {{ latestMessage }}
+        </template>
+      </div>
     </div>
 
     <!-- Expanded view shows log -->
@@ -175,14 +196,23 @@ export default {
 }
 
 .log-summary {
-  padding: 0.6em;
-  padding-right: 2.5em; /* reserve room for the toggle button, prevents overlap */
-  display: flex;
+  padding: 2px;
+  padding-right: 30px; /* reserve room for the toggle button, prevents overlap */
+  display: block;
   align-items: center;
-  justify-content: center;
+}
+
+.log-summary-text {
   text-align: center;
   font-size: large;
-  box-sizing: border-box;
+  height: calc(2 * 1.4em); /* height of element is 2 lines */
+  line-height: 1.4em;
+  padding: 0 5px; /* Give some padding so there's room for ... to not expand too far */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2; /* Future version of webkit-line-clamp, not fully supported yet */
 }
 
 .log-container {
@@ -215,8 +245,8 @@ export default {
 /* Toggle button */
 .log-toggle {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 0;
+  right: 2px;
   background: transparent;
   border: none;
   padding: 4px;
