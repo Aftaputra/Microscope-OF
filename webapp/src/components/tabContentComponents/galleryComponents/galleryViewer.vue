@@ -1,7 +1,7 @@
 <template>
-  <div id="scan-modal" ref="scanModal" uk-modal>
-    <div v-if="selectedItem" id="scan-modal-body" class="uk-modal-dialog uk-modal-body">
-      <h2 id="scan-modal-title" class="uk-modal-title">
+  <div id="viewer-modal" ref="viewerModal" uk-modal>
+    <div v-if="selectedItem" id="viewer-modal-body" class="uk-modal-dialog uk-modal-body">
+      <h2 id="viewer-modal-title" class="uk-modal-title">
         {{ selectedItem.name }}
         <button class="uk-modal-close uk-float-right" type="button">
           <span class="material-symbols-outlined">close</span>
@@ -58,7 +58,7 @@ import UIkit from "uikit";
 import OpenSeadragonViewer from "./openSeadragonViewer.vue";
 
 export default {
-  name: "ScanViewerModal",
+  name: "GalleryModal",
   components: {
     OpenSeadragonViewer,
   },
@@ -92,7 +92,7 @@ export default {
     },
   },
   mounted() {
-    this.modalEl = this.$refs.scanModal;
+    this.modalEl = this.$refs.viewerModal;
     this.beforeHideHandler = (event) => {
       if (this.enteringFullscreen) {
         event.preventDefault();
@@ -108,10 +108,10 @@ export default {
   },
   methods: {
     show() {
-      UIkit.modal(this.$refs.scanModal).show();
+      UIkit.modal(this.$refs.viewerModal).show();
     },
     hide() {
-      UIkit.modal(this.$refs.scanModal).hide();
+      UIkit.modal(this.$refs.viewerModal).hide();
     },
     goFullscreen() {
       this.$refs.openseadragon.openFullscreen();
@@ -131,11 +131,11 @@ input[type="range"] {
   z-index: 1001;
 }
 
-#scan-modal {
+#viewer-modal {
   padding: 10px;
 }
 
-#scan-modal-body {
+#viewer-modal-body {
   padding: 10px;
   width: 95%;
   height: 95%;
@@ -143,7 +143,7 @@ input[type="range"] {
   flex-direction: column;
 }
 
-#scan-modal-title {
+#viewer-modal-title {
   flex: 0 0 auto;
 }
 

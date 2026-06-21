@@ -41,7 +41,7 @@
       </div>
     </nav>
 
-    <ScanViewerModal ref="scanViewer" :selected-item="selectedItem" :base-uri="baseUri" />
+    <gallery-modal ref="viewerModal" :selected-item="selectedItem" :base-uri="baseUri" />
 
     <!-- Gallery -->
     <div v-if="ready" class="uk-padding-remove-top" uk-lightbox="toggle: .lightbox-link">
@@ -73,7 +73,7 @@ import axios from "axios";
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import galleryCard from "./galleryComponents/galleryCard.vue";
-import ScanViewerModal from "./galleryComponents/scanViewer.vue";
+import galleryModal from "./galleryComponents/galleryViewer.vue/index.js";
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
@@ -86,7 +86,7 @@ export default {
   components: {
     actionButton,
     galleryCard,
-    ScanViewerModal,
+    galleryModal,
     PaginateLinks,
   },
 
@@ -111,13 +111,6 @@ export default {
     },
     noItems() {
       return !this.all_items || this.all_items?.length === 0;
-    },
-    selectedItemDZI() {
-      if (this.selectedItem && this.selectedItem.dzi != "") {
-        return `${this.baseUri}/data/smart_scan/${this.selectedItem.name}/images/${this.selectedItem.dzi}`;
-      } else {
-        return null;
-      }
     },
     totalPages() {
       return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
@@ -213,13 +206,13 @@ export default {
       if (itemData.card_type === "Scan") {
         if (itemData.dzi) {
           this.selectedItem = itemData;
-          this.$refs.scanViewer.show();
+          this.$refs.viewerModal.show();
         } else {
           this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
         }
       } else {
         this.selectedItem = itemData;
-        this.$refs.scanViewer.show();
+        this.$refs.viewerModal.show();
       }
     },
     changePage(page) {
