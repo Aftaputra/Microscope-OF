@@ -1,9 +1,13 @@
 """Tests that captures have the expected metadata."""
 
 import logging
+from dataclasses import dataclass
+from typing import Callable, Optional
 
+import pytest
 from pydantic import BaseModel
 
+from labthings_fastapi.exceptions import InvocationCancelledError
 from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.things import OFMThing
@@ -13,6 +17,16 @@ from openflexure_microscope_server.things.gallery import (
 )
 
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
+
+
+def test_error_if_accessing_gallery_things_before_started():
+    """Check that gallery_providing_things property errors before init."""
+    thing = create_thing_without_server(GalleryThing)
+    with pytest.raises(
+        RuntimeError,
+        match="Cannot access gallery_providing_things before server has started.",
+    ):
+        thing.gallery_providing_things
 
 
 class MockGalleryData(BaseModel):
@@ -126,3 +140,109 @@ def test_gallery_logs_for_bad_providers(caplog):
         record = caplog.records[0]
         assert "Data from bad_thing cannot be shown in gallery" in record.message
         assert record.levelname == "ERROR"
+
+
+@pytest.fixture
+def minimal_gallery_env():
+    """Return a minimal working environment for testing the gallery."""
+    things = {
+        "minimal_thing1": MinimalGallerySource,
+        "minimal_thing2": MinimalGallerySource,
+        "gallery": GalleryThing,
+    }
+    with LabThingsTestEnv(
+        things=things, application_config={"data_folder": "./openflexure/data/"}
+    ) as env:
+        return env
+
+
+def test_gallery_lists_data(minimal_gallery_env, mocker, caplog):
+    """Test that the gallery calls all gallery things to list data."""
+    # Create a config with the minimal Thing and the bad Thing
+    gallery = minimal_gallery_env.get_thing_by_name("gallery")
+    thing_1 = minimal_gallery_env.get_thing_by_name("minimal_thing1")
+    thing_2 = minimal_gallery_env.get_thing_by_name("minimal_thing2")
+
+    thing_1_data = [
+        MockGalleryData(mock="thing_1", foobar=1),
+        MockGalleryData(mock="thing_1", foobar=2),
+    ]
+
+    thing_2_data = [
+        MockGalleryData(mock="thing_2", foobar=1),
+        MockGalleryData(mock="thing_2", foobar=2),
+    ]
+
+    mocker.patch.object(thing_1, "get_data_for_gallery", return_value=thing_1_data)
+    mocker.patch.object(thing_2, "get_data_for_gallery", return_value=thing_2_data)
+
+    thing_1_return = [
+        {"mock": "thing_1", "foobar": 1},
+        {"mock": "thing_1", "foobar": 2},
+    ]
+    thing_2_return = [
+        {"mock": "thing_2", "foobar": 1},
+        {"mock": "thing_2", "foobar": 2},
+    ]
+
+    assert gallery.list_data == thing_1_return + thing_2_return
+
+    thing_1.get_data_for_gallery.side_effect = RuntimeError
+    with caplog.at_level(logging.INFO):
+        assert gallery.list_data == thing_2_return
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "ERROR"
+
+
+@dataclass
+class GalleryDeleteTestCase:
+    """Inputs and expected outputs for testing ``save_from_memory``.
+
+    The default save kwargs assume a jpeg.
+    """
+
+    thing_1_side_effect: Optional[Callable]
+    thing_2_call_count: int
+    # Expect directly calling the action will raise the thing 1 side_effect error
+    action_errors: bool
+
+
+GALLERY_DELETE_TEST_CASES = [
+    # No errors from thing 1, thing 2 gets called
+    GalleryDeleteTestCase(
+        thing_1_side_effect=None, thing_2_call_count=1, action_errors=False
+    ),
+    # Thing 1 errors, thing 2 is still called
+    GalleryDeleteTestCase(
+        thing_1_side_effect=RuntimeError, thing_2_call_count=1, action_errors=False
+    ),
+    # Thing 1 raises invocation cancelled error. Thing 2 is not called. The InvocationError is raised
+    GalleryDeleteTestCase(
+        thing_1_side_effect=InvocationCancelledError,
+        thing_2_call_count=0,
+        action_errors=True,
+    ),
+]
+
+
+@pytest.mark.parametrize("test_case", GALLERY_DELETE_TEST_CASES)
+def test_gallery_calls_delete(test_case, minimal_gallery_env, mocker):
+    """Test that the gallery delete on all gallery providing things.."""
+    # Create a config with the minimal Thing and the bad Thing
+    gallery = minimal_gallery_env.get_thing_by_name("gallery")
+    thing_1 = minimal_gallery_env.get_thing_by_name("minimal_thing1")
+    thing_2 = minimal_gallery_env.get_thing_by_name("minimal_thing2")
+
+    mocker.patch.object(
+        thing_1, "delete_all_gallery_items", side_effect=test_case.thing_1_side_effect
+    )
+    mocker.patch.object(thing_2, "delete_all_gallery_items")
+
+    if test_case.action_errors:
+        with pytest.raises(test_case.thing_1_side_effect):
+            gallery.delete_all_data()
+    else:
+        gallery.delete_all_data()
+
+    assert thing_1.delete_all_gallery_items.call_count == 1
+    assert thing_2.delete_all_gallery_items.call_count == test_case.thing_2_call_count

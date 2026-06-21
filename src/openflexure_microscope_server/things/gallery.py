@@ -111,4 +111,7 @@ class GalleryThing(lt.Thing):
     def delete_all_data(self) -> None:
         """Delete all the gallery data on this microscope."""
         for thing in self.gallery_providing_things.values():
-            thing.delete_all_gallery_items()
+            try:
+                thing.delete_all_gallery_items()
+            except Exception as e:
+                self.logger.exception(e)
