@@ -1,4 +1,4 @@
-"""Provide endpoints that mimic the v2 API for OpenFlexure Connect discoverability."""
+"""Provide endpoints that mimic the v2 API for legacy discoverability."""
 
 from socket import gethostname
 
@@ -22,12 +22,14 @@ class JPEGResponse(Response):
 
 
 def add_v2_endpoints(thing_server: lt.ThingServer) -> None:
-    """Add the v2 API endpoints for OpenFlexure Connect discoverability."""
+    """Add the v2 API endpoints for legacy discoverability.
+
+    Old versions of OpenFlexure Connect use the v2 endpoints to check for microscopes.
+    This provides these routes so the microscope can be discovered by old versions of
+    connect.
+    """
     app = thing_server.app
 
-    # The endpoints below fool OpenFlexure Connect into thinking we are a
-    # v2 microscope, so we show up correctly.
-    # This is necessary until Connect is rebuilt. See #557.
     @app.get("/routes")
     def routes_stub() -> dict[str, dict]:
         """Return a stub list of routes.

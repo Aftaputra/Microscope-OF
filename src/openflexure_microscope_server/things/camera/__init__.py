@@ -20,6 +20,7 @@ from typing import Any, Literal, Mapping, Optional, Self
 
 import numpy as np
 import piexif
+from fastapi import Response
 from PIL import Image
 from pydantic import BaseModel
 
@@ -258,6 +259,21 @@ class BaseCamera(OFMThing, ABC):
     ) -> None:
         """Close hardware connection when the Thing context manager is closed."""
         pass
+
+    @lt.endpoint(
+        "get",
+        "snapshot",
+        responses={
+            200: {
+                "description": "A snapshot of the microscope stream",
+                "content": {"image/jpeg": {}},
+            },
+        },
+    )
+    async def snapshot(self) -> Response:
+        """Return a snapshot from the microscope."""
+        jpeg_data = await self.lores_mjpeg_stream.grab_frame()
+        return Response(content=jpeg_data, media_type="image/jpeg")
 
     @property
     def focus_fom(self) -> int:
