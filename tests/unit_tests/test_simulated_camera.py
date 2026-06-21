@@ -2,11 +2,13 @@
 
 import logging
 import time
+from io import BytesIO
 
 import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+from PIL import Image
 from pydantic import ValidationError
 
 import labthings_fastapi as lt
@@ -42,6 +44,19 @@ def camera(test_env) -> lt.Thing:
 def stage(test_env) -> lt.Thing:
     """Return the DummyStage Thing set up in the test environment."""
     return test_env.get_thing_by_type(DummyStage)
+
+
+def test_snapshot(test_env) -> lt.Thing:
+    """Check the snapshot GET request returns an image."""
+    http_client = test_env.get_thing_client("camera").client
+    response = http_client.get("camera/snapshot")
+    response.raise_for_status()
+    assert response.headers["content-type"] == "image/jpeg"
+    image = Image.open(BytesIO(response.content))
+
+    assert image.format == "JPEG"
+    assert image.width == 320
+    assert image.height == 240
 
 
 def test_downsample_shape_2d():
