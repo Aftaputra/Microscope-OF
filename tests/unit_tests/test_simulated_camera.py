@@ -1,6 +1,13 @@
-"""Test the functionality specific to the simulated camera."""
+"""Test the the simulated camera.
+
+This includes both unit tests for functions specific to the simulation camera or
+base camera functionality that is not camera specific, but requires the camera to
+start and take images.
+"""
 
 import logging
+import os
+import tempfile
 import time
 from io import BytesIO
 
@@ -14,7 +21,7 @@ from pydantic import ValidationError
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.things.background_detect import ChannelDeviationLUV
-from openflexure_microscope_server.things.camera import simulation
+from openflexure_microscope_server.things.camera import CaptureInfo, simulation
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
@@ -279,3 +286,110 @@ def test_generate_image_output_size(camera):
         img = camera.generate_image(pos)
 
         assert img.size == (camera.shape[1], camera.shape[0])
+
+
+def test_gallery_responses(camera, mocker, caplog):
+    """Check camera responds to gallery as expected."""
+    mock_raise_if_cancelled = mocker.patch(
+        "openflexure_microscope_server.things.camera.lt.raise_if_cancelled",
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir, caplog.at_level(logging.INFO):
+        camera._data_dir = tmpdir
+
+        assert camera.gallery_data_name == "Captures"
+        assert camera.gallery_data_schema == CaptureInfo
+
+        # When we start there are no captures
+        assert camera.get_data_for_gallery() == []
+
+        filenames = [
+            "doe.png",
+            "ray.png",
+            "me.jpg",
+            "far.jpeg",
+            "so.txt",
+            "la.json",
+            "tea.leaf",
+        ]
+        images = filenames[:4]
+        non_images = filenames[4:]
+
+        for filename in filenames:
+            with open(os.path.join(camera._data_dir, filename), "w") as f_obj:
+                f_obj.write("mock")
+
+        # Check all files written
+        assert set(os.listdir(camera._data_dir)) == set(filenames)
+
+        # Check only images are returned by get_data_for_galler
+        captures = camera.get_data_for_gallery()
+        assert {capture.name for capture in captures} == set(images)
+
+        # delete everything
+        camera.delete_all_gallery_items()
+
+        # No captures remain
+        assert camera.get_data_for_gallery() == []
+
+        # Non-images not deleted
+        assert set(os.listdir(camera._data_dir)) == set(non_images)
+
+        assert len(caplog.records) == len(images)
+        for record in caplog.records:
+            assert record.message.startswith("Deleting: ")
+        assert mock_raise_if_cancelled.call_count == len(images)
+
+
+def test_delete_capture(test_env, caplog):
+    """Check camera deletes images when requested."""
+    camera = test_env.get_thing_by_type(SimulatedCamera)
+    http_client = test_env.get_thing_client("camera").client
+
+    with tempfile.TemporaryDirectory() as tmpdir, caplog.at_level(logging.WARNING):
+        cam_dir = os.path.join(tmpdir, "camera")
+        os.makedirs(cam_dir)
+        camera._data_dir = cam_dir
+
+        filenames = [
+            os.path.join(cam_dir, "foo.png"),
+            # Make an image outside the camera dir
+            os.path.join(tmpdir, "external.png"),
+            os.path.join(cam_dir, "bar.txt"),
+        ]
+
+        for filename in filenames:
+            with open(filename, "w") as f_obj:
+                f_obj.write("mock")
+
+        # Check files created.
+        assert "foo.png" in os.listdir(camera._data_dir)
+        assert "bar.txt" in os.listdir(camera._data_dir)
+        assert os.path.isfile(os.path.join(tmpdir, "external.png"))
+
+        response = http_client.delete("camera/capture/foo.png")
+        assert response.status_code == 200  # OK
+        # File is gone
+        assert "foo.png" not in os.listdir(camera._data_dir)
+        # No longs
+        assert len(caplog.records) == 0
+
+        # Try to be evil and delete the file outside the cameras data dir"
+        response = http_client.delete(r"camera/capture/%2E%2E%2Ffoo.png")
+        assert response.status_code == 404  # Route not allowed by fastAPI
+        # No records
+        assert len(caplog.records) == 0
+
+        # Try to delete an image that doesn't exist
+        response = http_client.delete("camera/capture/fake.png")
+        assert response.status_code == 400  # Error deleting as it doesn't exist
+        # A new log
+        assert len(caplog.records) == 1
+
+        # Try to delete something that isn't an image.
+        response = http_client.delete("camera/capture/bar.txt")
+        assert response.status_code == 400  # Error deleting as it isn't and image
+        # File still exists.
+        assert "bar.txt" in os.listdir(camera._data_dir)
+        # A new log
+        assert len(caplog.records) == 2

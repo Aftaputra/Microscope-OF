@@ -62,6 +62,13 @@ BASE_IMAGE_FORMATS: dict[str, ImageFormatInfo] = {
 }
 
 
+def _file_is_capture(filename: str) -> bool:
+    """Return whether this filename is a capture."""
+    return BASE_IMAGE_FORMATS["jpeg"].path_matches(filename) or BASE_IMAGE_FORMATS[
+        "png"
+    ].path_matches(filename)
+
+
 class CaptureError(RuntimeError):
     """An error trying to capture from a CameraThing."""
 
@@ -304,10 +311,7 @@ class BaseCamera(OFMThing, ABC):
         captures = []
         for filename in files:
             full_path = os.path.join(self.data_dir, filename)
-            if os.path.isfile(full_path) and (
-                BASE_IMAGE_FORMATS["jpeg"].path_matches(filename)
-                or BASE_IMAGE_FORMATS["png"].path_matches(filename)
-            ):
+            if os.path.isfile(full_path) and _file_is_capture(filename):
                 captures.append(full_path)
         return captures
 
@@ -348,13 +352,15 @@ class BaseCamera(OFMThing, ABC):
 
         :param name: The name of the capture to delete
         """
-        full_path = os.path.join(self.data_dir, name)
-        if not os.path.exists(full_path):
-            self.logger.warning(f"Cannot find a capture of name {name}")
-            raise HTTPException(400, "Capture not found")
+        if not _file_is_capture(name):
+            self.logger.warning(f"{name} is not an image file.")
+            raise HTTPException(400, f"{name} is not an image file.")
+        full_path = os.path.normpath(os.path.join(self.data_dir, name))
+
         try:
             os.remove(full_path)
         except IOError as e:
+            self.logger.warning(f"Camera has no image named {name}.")
             raise HTTPException(
                 400, "Couldn't delete capture, check log for details"
             ) from e
