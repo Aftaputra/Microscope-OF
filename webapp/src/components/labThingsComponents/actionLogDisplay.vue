@@ -15,29 +15,22 @@
     <!-- Header always shows latest message -->
     <div class="log-summary">
       <div class="log-summary-text">
-        <template v-if="taskStatus === 'error'">
+        <div v-if="taskStatus === 'error'" class="status-error">
           <p>The task failed due to an error:</p>
           <p>{{ errorMessage }}</p>
-        </template>
+        </div>
 
-        <template v-else-if="taskStatus == 'cancelled'"> The task was cancelled. </template>
+        <div v-else-if="taskStatus == 'cancelled'" class="status-cancelled">
+          The task was cancelled.
+        </div>
 
-        <template v-else-if="taskStatus == 'completed'">
+        <div v-else-if="taskStatus == 'completed'" class="status-completed">
           The task completed successfully.
-        </template>
+        </div>
 
-        <template
-          v-if="
-            latestMessage &&
-            (taskStatus === 'error' || taskStatus === 'cancelled' || taskStatus === 'completed')
-          "
-        >
-          <br />
-        </template>
-
-        <template v-if="latestMessage">
+        <div v-else-if="latestMessage">
           {{ latestMessage }}
-        </template>
+        </div>
       </div>
     </div>
 
@@ -213,6 +206,21 @@ export default {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2; /* Future version of webkit-line-clamp, not fully supported yet */
+}
+
+.status-error {
+  color: #f0506e;
+  font-weight: 600;
+}
+
+.status-cancelled {
+  color: #faa05a;
+  font-weight: 600;
+}
+
+.status-completed {
+  color: green;
+  font-weight: 600;
 }
 
 .log-container {
