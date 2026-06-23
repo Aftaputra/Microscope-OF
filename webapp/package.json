@@ -16,7 +16,7 @@
     "lint:fix": "eslint . --fix --ignore-pattern .gitignore",
     "lint:style": "stylelint \"src/**/*.{vue,less,css}\" --max-warnings=0",
     "lint:style:fix": "stylelint \"src/**/*.{vue,less,css}\" --fix",
-    "test:unit": "NODE_OPTIONS=--expose-gc vitest run src/tests/unit/ --no-cache --mode test --detectAsyncLeaks --coverage --isolate=true --pool=forks --silent --logHeapUsage"
+    "test:unit": "NODE_OPTIONS=--expose-gc vitest run src/tests/unit/ --no-cache --mode test --detectAsyncLeaks --isolate=true --pool=forks --logHeapUsage --reporter=verbose"
   },
   "dependencies": {
     "@vueuse/core": "^14.3.0",
