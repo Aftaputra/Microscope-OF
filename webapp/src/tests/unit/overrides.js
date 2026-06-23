@@ -54,6 +54,9 @@ export const componentOverrides = {
   "matrixDisplay.vue": {
     props: { matrix: [] },
   },
+  "toggleSwitch.vue": {
+    props: { modelValue: true },
+  },
   "actionProgressBar.vue": {
     props: { taskStatus: "" },
   },

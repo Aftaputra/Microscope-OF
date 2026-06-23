@@ -20,12 +20,12 @@ export default {
       type: String,
       default: undefined,
     },
-    offLabel: {
+    falseLabel: {
       required: false,
       type: String,
       default: undefined,
     },
-    onLabel: {
+    trueLabel: {
       required: false,
       type: String,
       default: undefined,
@@ -36,10 +36,10 @@ export default {
 
   computed: {
     showStateLabel() {
-      return this.onLabel !== undefined && this.offLabel !== undefined;
+      return this.trueLabel !== undefined && this.falseLabel !== undefined;
     },
     stateLabelText() {
-      return this.modelValue ? this.onLabel : this.offLabel;
+      return this.modelValue ? this.trueLabel : this.falseLabel;
     },
   },
 

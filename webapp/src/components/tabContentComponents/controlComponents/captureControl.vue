@@ -5,8 +5,8 @@
     <toggle-switch
       v-model="saveToGallery"
       label-text="Save to Gallery?"
-      on-label="Saving"
-      off-label="Downloading"
+      true-label="Saving"
+      false-label="Downloading"
     />
 
     <div class="uk-margin">
