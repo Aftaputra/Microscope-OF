@@ -6,6 +6,13 @@
       <div class="uk-navbar-right">
         <div class="uk-grid">
           <div class="gallery-button">
+            <multi-select-dropdown
+              v-model="selectedFilter"
+              :options="filterOptions"
+              title="Filter Gallery"
+            />
+          </div>
+          <div class="gallery-button">
             <action-button
               class="uk-width-1-1"
               thing="smart_scan"
@@ -75,6 +82,7 @@
 
 <script>
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
+import MultiSelectDropdown from "@/components/genericComponents/multiSelectDropdown.vue";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import galleryCard from "./galleryComponents/galleryCard.vue";
 import galleryModal from "./galleryComponents/galleryViewer.vue";
@@ -92,6 +100,7 @@ export default {
     galleryCard,
     galleryModal,
     PaginateLinks,
+    MultiSelectDropdown,
   },
 
   emits: ["scrollTop"],
@@ -103,6 +112,8 @@ export default {
       osdViewer: null,
       currentPage: 1,
       itemsPerPage: 18,
+      selectedFilter: ["Scans", "Captures"],
+      filterOptions: ["Scans", "Captures"],
     };
   },
 
