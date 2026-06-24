@@ -147,13 +147,7 @@ export default {
 }
 
 .copy-button:hover {
-  color: @global-color;
-}
-
-.hook-inverse() {
-  .copy-button:hover {
-    color: @inverse-global-color;
-  }
+  color: var(--themed-global-colour);
 }
 
 .copy-button.success {
