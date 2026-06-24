@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Callable, Literal, Optional
 
 import pytest
 from pydantic import BaseModel
@@ -34,6 +34,13 @@ class MockGalleryData(BaseModel):
 
     mock: str
     foobar: int
+    card_type: Literal["Mock"] = "Mock"
+
+
+class MockGalleryData2(MockGalleryData):
+    """Mock gallery data with a different card name."""
+
+    card_type: Literal["Mock2"] = "Mock2"
 
 
 class MinimalGalleryClass:
@@ -46,7 +53,7 @@ class MinimalGalleryClass:
 
     def get_data_for_gallery(self) -> list[BaseModel]:
         """Return a list of Mock Gallery Data."""
-        return [MockGalleryData(mock="mock", foobar="foobar")]
+        return [self.gallery_data_schema(mock="mock", foobar="foobar")]
 
     def delete_all_gallery_items(self) -> None:
         """Mock deleting all the data."""
@@ -59,6 +66,12 @@ class MinimalGallerySource(OFMThing, MinimalGalleryClass):
     """
 
     show_data_in_gallery = True
+
+
+class MinimalGallerySource2(MinimalGallerySource):
+    """Another Thing that can show data in the gallery with a different card type."""
+
+    gallery_data_schema: type[BaseModel] = MockGalleryData2
 
 
 class BadGallerySource(OFMThing):
@@ -151,7 +164,7 @@ def minimal_gallery_env():
     """Return a minimal working environment for testing the gallery."""
     things = {
         "minimal_thing1": MinimalGallerySource,
-        "minimal_thing2": MinimalGallerySource,
+        "minimal_thing2": MinimalGallerySource2,
         "gallery": GalleryThing,
     }
     with LabThingsTestEnv(
@@ -174,8 +187,8 @@ def test_gallery_lists_data(minimal_gallery_env, mocker, caplog):
     ]
 
     thing_2_data = [
-        MockGalleryData(mock="thing_2", foobar=1),
-        MockGalleryData(mock="thing_2", foobar=2),
+        MockGalleryData2(mock="thing_2", foobar=1),
+        MockGalleryData2(mock="thing_2", foobar=2),
     ]
 
     # Also mock the get_data_for_gallery methods.
@@ -184,12 +197,12 @@ def test_gallery_lists_data(minimal_gallery_env, mocker, caplog):
 
     # Set the expected returns.
     thing_1_return = [
-        {"mock": "thing_1", "foobar": 1},
-        {"mock": "thing_1", "foobar": 2},
+        {"mock": "thing_1", "foobar": 1, "card_type": "Mock"},
+        {"mock": "thing_1", "foobar": 2, "card_type": "Mock"},
     ]
     thing_2_return = [
-        {"mock": "thing_2", "foobar": 1},
-        {"mock": "thing_2", "foobar": 2},
+        {"mock": "thing_2", "foobar": 1, "card_type": "Mock2"},
+        {"mock": "thing_2", "foobar": 2, "card_type": "Mock2"},
     ]
 
     # Check that the gallery returns the expected concatenated data
@@ -212,24 +225,53 @@ class GalleryDeleteTestCase:
     The default save kwargs assume a jpeg.
     """
 
+    cards_to_delete: list[str]
     thing_1_side_effect: Optional[Callable]
+    thing_1_call_count: int
     thing_2_call_count: int
     # Expect directly calling the action will raise the thing 1 side_effect error
     action_errors: bool
 
 
 GALLERY_DELETE_TEST_CASES = [
-    # No errors from thing 1, thing 2 gets called
+    # Delete both types of card.
     GalleryDeleteTestCase(
-        thing_1_side_effect=None, thing_2_call_count=1, action_errors=False
+        cards_to_delete=["Mock", "Mock2"],
+        thing_1_side_effect=None,
+        thing_1_call_count=1,
+        thing_2_call_count=1,
+        action_errors=False,
+    ),
+    # Delete first type of card.
+    GalleryDeleteTestCase(
+        cards_to_delete=["Mock"],
+        thing_1_side_effect=None,
+        thing_1_call_count=1,
+        thing_2_call_count=0,
+        action_errors=False,
+    ),
+    # Delete second type of card.
+    GalleryDeleteTestCase(
+        cards_to_delete=["Mock2"],
+        thing_1_side_effect=None,
+        thing_1_call_count=0,
+        thing_2_call_count=1,
+        action_errors=False,
     ),
     # Thing 1 errors, thing 2 is still called
     GalleryDeleteTestCase(
-        thing_1_side_effect=RuntimeError, thing_2_call_count=1, action_errors=False
+        cards_to_delete=["Mock", "Mock2"],
+        thing_1_side_effect=RuntimeError,
+        thing_1_call_count=1,
+        thing_2_call_count=1,
+        action_errors=False,
     ),
-    # Thing 1 raises invocation cancelled error. Thing 2 is not called. The InvocationError is raised
+    # Thing 1 raises invocation cancelled error. Thing 2 is not called.
+    # The InvocationError is raised
     GalleryDeleteTestCase(
+        cards_to_delete=["Mock", "Mock2"],
         thing_1_side_effect=InvocationCancelledError,
+        thing_1_call_count=1,
         thing_2_call_count=0,
         action_errors=True,
     ),
@@ -253,10 +295,10 @@ def test_gallery_calls_delete(test_case, minimal_gallery_env, mocker):
     # Call delete_all_data, checking for errors if the test case expects an error.
     if test_case.action_errors:
         with pytest.raises(test_case.thing_1_side_effect):
-            gallery.delete_all_data()
+            gallery.delete_all_data(test_case.cards_to_delete)
     else:
-        gallery.delete_all_data()
+        gallery.delete_all_data(test_case.cards_to_delete)
 
     # Check the call counts are as expected from the test case.
-    assert thing_1.delete_all_gallery_items.call_count == 1
+    assert thing_1.delete_all_gallery_items.call_count == test_case.thing_1_call_count
     assert thing_2.delete_all_gallery_items.call_count == test_case.thing_2_call_count
