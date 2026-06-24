@@ -45,7 +45,8 @@ class GalleryThing(lt.Thing):
     all_ofm_things: Mapping[str, OFMThing] = lt.thing_slot()
 
     _gallery_providing_things: Optional[Mapping[str, GalleryCompatibleThing]] = None
-    _card_types: Optional[Mapping[str, GalleryCompatibleThing]] = None
+    _card_types: Optional[list[str]] = None
+    _card_type_map: dict[str, str] = {}
 
     @property
     def gallery_providing_things(self) -> Mapping[str, GalleryCompatibleThing]:
@@ -101,6 +102,7 @@ class GalleryThing(lt.Thing):
             card_type = props["card_type"]["const"]
             if card_type not in card_types:
                 card_types.append(card_type)
+            self._card_type_map[thing.name] = card_type
 
         self._card_types = card_types
 
@@ -133,10 +135,12 @@ class GalleryThing(lt.Thing):
         return data_list
 
     @lt.action
-    def delete_all_data(self) -> None:
-        """Delete all the gallery data on this microscope."""
+    def delete_all_data(self, card_types: list[str]) -> None:
+        """Delete all the gallery data on this microscope with the given card types."""
         for thing in self.gallery_providing_things.values():
-            try:
-                thing.delete_all_gallery_items()
-            except Exception as e:
-                self.logger.exception(e)
+            thing_card_type = self._card_type_map.get(thing.name)
+            if thing_card_type in card_types:
+                try:
+                    thing.delete_all_gallery_items()
+                except Exception as e:
+                    self.logger.exception(e)

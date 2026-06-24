@@ -1,5 +1,5 @@
 <template>
-  <div ref="galleryDisplay" class="galleryDisplay uk-padding uk-padding-remove-top">
+  <div ref="galleryDisplay" class="gallery-display uk-padding uk-padding-remove-top">
     <!-- Gallery nav bar -->
     <nav class="gallery-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
       <!-- Right side buttons -->
@@ -32,11 +32,13 @@
               thing="gallery"
               action="delete_all_data"
               submit-label="Delete All"
+              :submit-data="{ card_types: selectedCardTypes }"
+              :is-disabled="totalPages == 0"
               :can-terminate="true"
               :button-primary="false"
               :modal-progress="true"
               :requires-confirmation="true"
-              :confirmation-message="'<p>Are you sure you want to delete all gallery data from the microscope?</p><p>This is <b>irreversible</b>!</p>'"
+              :confirmation-message="deleteAllConfirmationMessage"
               @error="modalError"
             />
           </div>
@@ -130,6 +132,16 @@ export default {
     paginatedItems() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       return (this.filtered_items || []).slice(start, start + this.itemsPerPage);
+    },
+    deleteAllConfirmationMessage() {
+      return `
+        <p>Are you sure you want to delete all gallery data with the following types</p>
+        <ul>
+          ${this.selectedCardTypes.map((type) => `<li>${type}</li>`).join("\n")}
+        </ul>
+        <p>from the microscope?</p>
+        <p>This is <b>irreversible</b>!</p>
+      `;
     },
   },
 
