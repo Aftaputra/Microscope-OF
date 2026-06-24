@@ -8,9 +8,8 @@
       <h2>Intended use</h2>
       <p>
         The OpenFlexure system, including hardware, software and peripherals, is intended solely for
-        research, educational, training, and non-clinical use.<br />It is not a certified medical
-        device, and must not be relied upon for diagnosis, treatment, patient care, or other
-        clinical purposes. <br /><br />Any use outside the stated intended purpose is the sole
+        research, educational, training, and non-clinical use.<br />The OpenFlexure Microscope is
+        not a certified medical device, and any use outside the stated intended purpose is the sole
         responsibility of the user.
       </p>
     </div>
