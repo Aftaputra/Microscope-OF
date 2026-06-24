@@ -81,14 +81,7 @@ export default {
 
 .progress .indeterminate,
 .progress .determinate {
-  background-color: @global-primary-background;
-}
-
-.hook-inverse() {
-  .progress .indeterminate,
-  .progress .determinate {
-    background-color: @inverse-primary-muted-color;
-  }
+  background-color: var(--theme-primary-background);
 }
 
 .progress .indeterminate::before {

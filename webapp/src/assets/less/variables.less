@@ -160,6 +160,27 @@
 @sidebar-right-left: 0px;
 @sidebar-right-left-xl: 60px;
 
+/**
+ * Self inverting colours
+ *
+ * These invert automatically when the theme inverts. these need to be used as css variables.
+ * They can be used without importing uikit/src/less/uikit.theme.less fully into the
+ * component.
+ */
+
+:root {
+    --theme-text-colour: @global-color;
+    .hook-inverse() {
+        --theme-text-colour: @inverse-global-color;
+    }
+
+    --theme-primary-background: @global-primary-background;
+    .hook-inverse() {
+        --theme-primary-background: @inverse-primary-muted-color;
+    }
+
+}
+
 /*
  * Navbar
  */
