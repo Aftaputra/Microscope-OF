@@ -36,6 +36,8 @@ class GalleryCompatibleThing(Protocol):
     # Ignore D102: No docstrings for the protocol.
     def get_data_for_gallery(self) -> list[BaseModel]: ...  # noqa: D102
 
+    def delete_all_gallery_items(self) -> None: ...  # noqa: D102
+
 
 class GalleryThing(lt.Thing):
     """A Thing for communicating with the front end gallery."""
@@ -95,5 +97,21 @@ class GalleryThing(lt.Thing):
         """
         data_list = []
         for thing in self.gallery_providing_things.values():
-            data_list += [model.model_dump() for model in thing.get_data_for_gallery()]
+            try:
+                data_list += [
+                    model.model_dump() for model in thing.get_data_for_gallery()
+                ]
+            except Exception as e:
+                # If any of the providers errors producing a list, log the exception
+                # and continue.
+                self.logger.exception(e)
         return data_list
+
+    @lt.action
+    def delete_all_data(self) -> None:
+        """Delete all the gallery data on this microscope."""
+        for thing in self.gallery_providing_things.values():
+            try:
+                thing.delete_all_gallery_items()
+            except Exception as e:
+                self.logger.exception(e)

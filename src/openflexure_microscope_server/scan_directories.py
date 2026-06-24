@@ -8,7 +8,7 @@ import shutil
 import threading
 import zipfile
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Optional, Self
+from typing import Any, Literal, Mapping, Optional, Self
 
 from pydantic import (
     BaseModel,
@@ -55,6 +55,8 @@ class ScanInfo(BaseModel):
     number_of_images: int
     stitch_available: bool
     dzi: Optional[str]
+    thing: str = "smart_scan"
+    card_type: Literal["Scan"] = "Scan"
 
 
 class BaseScanData(BaseModel):

@@ -5,17 +5,17 @@
         <div class="view-image uk-padding-remove uk-height-1-1">
           <img
             id="thumbnail-stitched-image"
-            :class="[itemData?.dzi ? 'thumbnail-fit clickable' : 'thumbnail-fit disabled']"
+            :class="[viewerAvailable ? 'thumbnail-fit clickable' : 'thumbnail-fit disabled']"
             class="thumbnail-fit"
             :src="thumbnailPath"
             onerror="this.src = '/titleiconpink.svg'"
-            @click="itemData?.dzi && requestViewer()"
+            @click="viewerAvailable && requestViewer()"
           />
         </div>
       </div>
       <h3 class="uk-card-title gallery-card-title">{{ itemData.name }}</h3>
       <div class="button-container">
-        <div class="uk-button-group gallery-card-buttons">
+        <div v-if="itemData.card_type === 'Scan'" class="uk-button-group gallery-card-buttons">
           <action-button
             class="uk-width-1-2"
             thing="smart_scan"
@@ -55,7 +55,7 @@
           Show Stitched Scan
         </button>
       </div>
-      <div class="item-info">
+      <div v-if="itemData.card_type === 'Scan'" class="item-info">
         <ul>
           <li>{{ itemData.number_of_images }} images</li>
           <li>Created: {{ formatDate(itemData.created) }}</li>
@@ -107,7 +107,17 @@ export default {
       return `${this.baseUri}/smart_scan/get_stitch/${this.itemData.name}`;
     },
     thumbnailPath() {
-      return `${this.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=${this.itemData.name}&modified=${this.itemData.modified}`;
+      if (this.itemData.card_type === "Scan") {
+        return `${this.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=${this.itemData.name}&modified=${this.itemData.modified}`;
+      }
+      return `${this.baseUri}/data/${this.itemData.thing}/${this.itemData.name}`;
+    },
+    /**
+     * Return True if there is a viewer available for this card's data.
+     */
+    viewerAvailable() {
+      if (this.itemData.card_type === "Scan") return Boolean(this.itemData?.dzi);
+      return true;
     },
   },
 
@@ -144,7 +154,13 @@ export default {
     async deleteScan() {
       try {
         await this.modalConfirm(`Are you sure you want to delete ${this.itemData.name}?`);
-        await axios.delete(`${this.baseUri}/smart_scan/scans/${this.itemData.name}`);
+        if (this.itemData.card_type === "Scan") {
+          await axios.delete(`${this.baseUri}/smart_scan/scans/${this.itemData.name}`);
+        } else {
+          await axios.delete(
+            `${this.baseUri}/${this.itemData.thing}/capture/${this.itemData.name}`,
+          );
+        }
         this.$emit("update-requested");
         this.modalNotify(`Deleted ${this.itemData.name}`);
       } catch (e) {

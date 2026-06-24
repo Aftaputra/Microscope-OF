@@ -281,8 +281,11 @@ def test_public_delete_scan(entered_smart_scan_thing, caplog):
     assert len(caplog.records) == 1
 
 
-def test_delete_all_scans(entered_smart_scan_thing, caplog):
+def test_delete_all_scans(entered_smart_scan_thing, caplog, mocker):
     """Check the delete_all_scan API really does delete all the scans."""
+    mock_raise_if_cancelled = mocker.patch(
+        "openflexure_microscope_server.things.smart_scan.lt.raise_if_cancelled",
+    )
     smart_scan_thing = entered_smart_scan_thing
     with caplog.at_level(logging.INFO):
         fake_scan_names = [
@@ -295,12 +298,17 @@ def test_delete_all_scans(entered_smart_scan_thing, caplog):
             fake_scan_path = os.path.join(SCAN_DIR, fake_scan_name)
             os.makedirs(fake_scan_path)
             assert os.path.exists(fake_scan_path)
-        smart_scan_thing.delete_all_scans()
+        smart_scan_thing.delete_all_gallery_items()
         for fake_scan_name in fake_scan_names:
             fake_scan_path = os.path.join(SCAN_DIR, fake_scan_name)
             assert not os.path.exists(fake_scan_path)
-        # No logs generated
-        assert len(caplog.records) == 0
+        # One log generated per scan deleted
+        assert len(caplog.records) == 4
+        for record in caplog.records:
+            assert record.message.startswith("Deleting: fake_scan_000")
+            assert record.levelname == "INFO"
+        # Check that raise_if_cancelled is called once for each scan.
+        assert mock_raise_if_cancelled.call_count == 4
 
 
 def _run_only_outer_scan(

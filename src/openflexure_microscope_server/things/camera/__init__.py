@@ -20,7 +20,7 @@ from typing import Any, Literal, Mapping, Optional, Self
 
 import numpy as np
 import piexif
-from fastapi import Response
+from fastapi import HTTPException, Response
 from PIL import Image
 from pydantic import BaseModel
 
@@ -60,6 +60,13 @@ BASE_IMAGE_FORMATS: dict[str, ImageFormatInfo] = {
         supported_extensions=(".png",),
     ),
 }
+
+
+def _file_is_capture(filename: str) -> bool:
+    """Return whether this filename is a capture."""
+    return BASE_IMAGE_FORMATS["jpeg"].path_matches(filename) or BASE_IMAGE_FORMATS[
+        "png"
+    ].path_matches(filename)
 
 
 class CaptureError(RuntimeError):
@@ -199,6 +206,16 @@ class CaptureMode(BaseModel):
     """The resolution to save the image. Use None to save as captured."""
 
 
+class CaptureInfo(BaseModel):
+    """Summary information for the UI about an image."""
+
+    name: str
+    created: float
+    modified: float
+    thing: str
+    card_type: Literal["Capture"] = "Capture"
+
+
 class BaseCamera(OFMThing, ABC):
     """The base class for all cameras. All cameras must directly inherit from this class.
 
@@ -274,6 +291,79 @@ class BaseCamera(OFMThing, ABC):
         """Return a snapshot from the microscope."""
         jpeg_data = await self.lores_mjpeg_stream.grab_frame()
         return Response(content=jpeg_data, media_type="image/jpeg")
+
+    # Register with gallery.
+    _show_data_in_gallery = True
+
+    @property
+    def gallery_data_name(self) -> str:
+        """Name under which data shows up in gallery."""
+        return "Captures"
+
+    @property
+    def gallery_data_schema(self) -> type[CaptureInfo]:
+        """The schema (BaseModel) for passing data to the gallery."""
+        return CaptureInfo
+
+    def _all_captures(self) -> list[str]:
+        """Return the full path for all captures on disk."""
+        files = os.listdir(self._data_dir)
+        captures = []
+        for filename in files:
+            full_path = os.path.join(self.data_dir, filename)
+            if os.path.isfile(full_path) and _file_is_capture(filename):
+                captures.append(full_path)
+        return captures
+
+    def get_data_for_gallery(self) -> list[CaptureInfo]:
+        """Return all the information about the saved captures."""
+        return [
+            CaptureInfo(
+                name=os.path.basename(capture),
+                created=os.path.getctime(capture),
+                modified=os.path.getmtime(capture),
+                thing=self.name,
+            )
+            for capture in self._all_captures()
+        ]
+
+    def delete_all_gallery_items(self) -> None:
+        """Delete all the captures on the microscope.
+
+        Use with extreme caution.
+        """
+        for capture in self._all_captures():
+            lt.raise_if_cancelled()
+            self.logger.info(f"Deleting: {capture}")
+            os.remove(capture)
+
+    @lt.endpoint(
+        "delete",
+        "capture/{name}",
+        responses={
+            200: {"description": "Successfully deleted capture"},
+            400: {"description": "An error occurred while trying to delete capture"},
+        },
+    )
+    def delete_capture(self, name: str) -> None:
+        """Delete the specified capture.
+
+        This endpoint allows captures to be deleted from disk.
+
+        :param name: The name of the capture to delete
+        """
+        if not _file_is_capture(name):
+            self.logger.warning(f"{name} is not an image file.")
+            raise HTTPException(400, f"{name} is not an image file.")
+        full_path = os.path.normpath(os.path.join(self.data_dir, name))
+
+        try:
+            os.remove(full_path)
+        except IOError as e:
+            self.logger.warning(f"Failed to delete {name}.")
+            raise HTTPException(
+                400, "Couldn't delete capture, check log for details"
+            ) from e
 
     @property
     def focus_fom(self) -> int:

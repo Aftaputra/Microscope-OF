@@ -24,6 +24,21 @@ REPO_ROOT = os.path.dirname(THIS_DIR)
 SIM_CONFIG = os.path.join(REPO_ROOT, "ofm_config_simulation.json")
 
 
+@pytest.fixture(autouse=True)
+def restore_root_logger():
+    """Restore the logging level of the root logger after each test.
+
+    As we change the root logging level if any code runs ``configure_logging``
+    this can make logs leak between tests.
+    """
+    root = logging.getLogger()
+    old_level = root.level
+
+    yield
+
+    root.setLevel(old_level)
+
+
 @pytest.fixture
 def simulation_test_env():
     """Yield a server with the configuration from the simulation json."""

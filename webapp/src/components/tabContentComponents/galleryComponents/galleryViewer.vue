@@ -1,8 +1,8 @@
 <template>
-  <div id="scan-modal" ref="scanModal" uk-modal>
-    <div v-if="selectedScan" id="scan-modal-body" class="uk-modal-dialog uk-modal-body">
-      <h2 id="scan-modal-title" class="uk-modal-title">
-        {{ selectedScan.name }}
+  <div id="viewer-modal" ref="viewerModal" uk-modal>
+    <div v-if="selectedItem" id="viewer-modal-body" class="uk-modal-dialog uk-modal-body">
+      <h2 id="viewer-modal-title" class="uk-modal-title">
+        {{ selectedItem.name }}
         <button class="uk-modal-close uk-float-right" type="button">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -12,11 +12,11 @@
       </h2>
 
       <!-- Viewer -->
-      <div v-if="selectedScanDZI" id="viewer_container" class="viewer_container">
+      <div v-if="imageSource" id="viewer_container" class="viewer_container">
         <OpenSeadragonViewer
           id="openseadragon"
           ref="openseadragon"
-          :src="selectedScanDZI"
+          :src="imageSource"
           :brightness="brightness"
           :contrast="contrast"
           :saturation="saturation"
@@ -25,7 +25,7 @@
       </div>
 
       <!-- Controls -->
-      <div v-if="selectedScanDZI" class="viewer-controls">
+      <div v-if="imageSource" class="viewer-controls">
         <div class="controlsContainer">
           <label>
             Brightness
@@ -58,12 +58,12 @@ import UIkit from "uikit";
 import OpenSeadragonViewer from "./openSeadragonViewer.vue";
 
 export default {
-  name: "ScanViewerModal",
+  name: "GalleryModal",
   components: {
     OpenSeadragonViewer,
   },
   props: {
-    selectedScan: {
+    selectedItem: {
       type: Object,
       default: null,
     },
@@ -79,15 +79,20 @@ export default {
     };
   },
   computed: {
-    selectedScanDZI() {
-      if (this.selectedScan && this.selectedScan.dzi) {
-        return `${this.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
+    imageSource() {
+      if (this.selectedItem?.card_type === "Scan" && this.selectedItem?.dzi) {
+        return `${this.baseUri}/data/smart_scan/${this.selectedItem.name}/images/${this.selectedItem.dzi}`;
+      } else if (this.selectedItem?.card_type === "Capture") {
+        return {
+          type: "image",
+          url: `${this.baseUri}/data/${this.selectedItem.thing}/${this.selectedItem.name}`,
+        };
       }
       return null;
     },
   },
   mounted() {
-    this.modalEl = this.$refs.scanModal;
+    this.modalEl = this.$refs.viewerModal;
     this.beforeHideHandler = (event) => {
       if (this.enteringFullscreen) {
         event.preventDefault();
@@ -103,10 +108,10 @@ export default {
   },
   methods: {
     show() {
-      UIkit.modal(this.$refs.scanModal).show();
+      UIkit.modal(this.$refs.viewerModal).show();
     },
     hide() {
-      UIkit.modal(this.$refs.scanModal).hide();
+      UIkit.modal(this.$refs.viewerModal).hide();
     },
     goFullscreen() {
       this.$refs.openseadragon.openFullscreen();
@@ -126,11 +131,11 @@ input[type="range"] {
   z-index: 1001;
 }
 
-#scan-modal {
+#viewer-modal {
   padding: 10px;
 }
 
-#scan-modal-body {
+#viewer-modal-body {
   padding: 10px;
   width: 95%;
   height: 95%;
@@ -138,7 +143,7 @@ input[type="range"] {
   flex-direction: column;
 }
 
-#scan-modal-title {
+#viewer-modal-title {
   flex: 0 0 auto;
 }
 

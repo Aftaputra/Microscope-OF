@@ -19,14 +19,19 @@
               @error="modalError"
             />
           </div>
-          <div>
-            <button
-              class="uk-button uk-button-default uk-width-1-1 gallery-button"
-              type="button"
-              @click="deleteAllScans()"
-            >
-              Delete All Scans
-            </button>
+          <div class="gallery-button">
+            <action-button
+              class="uk-width-1-1"
+              thing="gallery"
+              action="delete_all_data"
+              submit-label="Delete All"
+              :can-terminate="true"
+              :button-primary="false"
+              :modal-progress="true"
+              :requires-confirmation="true"
+              :confirmation-message="'<p>Are you sure you want to delete all gallery data from the microscope?</p><p>This is <b>irreversible</b>!</p>'"
+              @error="modalError"
+            />
           </div>
           <div>
             <button
@@ -41,7 +46,7 @@
       </div>
     </nav>
 
-    <ScanViewerModal ref="scanViewer" :selected-scan="selectedScan" :base-uri="baseUri" />
+    <gallery-modal ref="viewerModal" :selected-item="selectedItem" :base-uri="baseUri" />
 
     <!-- Gallery -->
     <div v-if="ready" class="uk-padding-remove-top" uk-lightbox="toggle: .lightbox-link">
@@ -54,7 +59,7 @@
         <div v-for="itemData in paginatedItems" :key="itemData.id">
           <gallery-card
             :item-data="itemData"
-            @viewer-requested="showScan"
+            @viewer-requested="showItem"
             @update-requested="refreshGallery"
           />
         </div>
@@ -69,11 +74,10 @@
 </template>
 
 <script>
-import axios from "axios";
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import galleryCard from "./galleryComponents/galleryCard.vue";
-import ScanViewerModal from "./galleryComponents/scanViewer.vue";
+import galleryModal from "./galleryComponents/galleryViewer.vue";
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
@@ -86,7 +90,7 @@ export default {
   components: {
     actionButton,
     galleryCard,
-    ScanViewerModal,
+    galleryModal,
     PaginateLinks,
   },
 
@@ -95,7 +99,7 @@ export default {
   data: function () {
     return {
       all_items: [],
-      selectedScan: null,
+      selectedItem: null,
       osdViewer: null,
       currentPage: 1,
       itemsPerPage: 18,
@@ -104,20 +108,8 @@ export default {
 
   computed: {
     ...mapState(useSettingsStore, ["baseUri", "ready"]),
-    scansUri() {
-      // The scans URI is currently used for creating endpoint URIs.
-      // The actual property does not exist. So allowUndefined=true
-      return this.thingPropertyUrl("smart_scan", "scans", true);
-    },
     noItems() {
       return !this.all_items || this.all_items?.length === 0;
-    },
-    selectedScanDZI() {
-      if (this.selectedScan && this.selectedScan.dzi != "") {
-        return `${this.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
-      } else {
-        return null;
-      }
     },
     totalPages() {
       return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
@@ -195,26 +187,17 @@ export default {
         this.all_items = [];
       }
     },
-    async deleteAllScans() {
-      try {
-        await this.modalConfirm(
-          "Are you sure you want to delete all scans from the microscope? " +
-            "This is <b>irreversible</b>!",
-        );
-        await axios.delete(`${this.scansUri}`);
-        await this.refreshGallery();
-        this.modalNotify("Deleted all scans.");
-      } catch (e) {
-        // if the confirmation was cancelled, it's rejected with null error
-        if (e) this.modalError(e);
-      }
-    },
-    showScan(scan) {
-      if (scan.dzi) {
-        this.selectedScan = scan;
-        this.$refs.scanViewer.show();
+    showItem(itemData) {
+      if (itemData.card_type === "Scan") {
+        if (itemData.dzi) {
+          this.selectedItem = itemData;
+          this.$refs.viewerModal.show();
+        } else {
+          this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
+        }
       } else {
-        this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
+        this.selectedItem = itemData;
+        this.$refs.viewerModal.show();
       }
     },
     changePage(page) {
