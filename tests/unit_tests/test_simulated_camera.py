@@ -297,7 +297,6 @@ def test_gallery_responses(camera, mocker, caplog):
     with tempfile.TemporaryDirectory() as tmpdir, caplog.at_level(logging.INFO):
         camera._data_dir = tmpdir
 
-        assert camera.gallery_data_name == "Captures"
         assert camera.gallery_data_schema == CaptureInfo
 
         # When we start there are no captures

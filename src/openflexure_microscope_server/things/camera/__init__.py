@@ -296,11 +296,6 @@ class BaseCamera(OFMThing, ABC):
     _show_data_in_gallery = True
 
     @property
-    def gallery_data_name(self) -> str:
-        """Name under which data shows up in gallery."""
-        return "Captures"
-
-    @property
     def gallery_data_schema(self) -> type[CaptureInfo]:
         """The schema (BaseModel) for passing data to the gallery."""
         return CaptureInfo

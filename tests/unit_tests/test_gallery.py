@@ -42,8 +42,6 @@ class MinimalGalleryClass:
     This should fail the protocol check as it is not an OFMThing
     """
 
-    gallery_data_name: str = "Mock"
-
     gallery_data_schema: type[BaseModel] = MockGalleryData
 
     def get_data_for_gallery(self) -> list[BaseModel]:
@@ -66,12 +64,10 @@ class MinimalGallerySource(OFMThing, MinimalGalleryClass):
 class BadGallerySource(OFMThing):
     """An OFMThing that almost defines enough to show in the gallery.
 
-    Shouldn't match the protocol as ``gallery_data_name`` is missing.
+    Shouldn't match the protocol as ``gallery_data_schema`` is missing.
     """
 
     show_data_in_gallery = True
-
-    gallery_data_schema: type[BaseModel] = MockGalleryData
 
     def get_data_for_gallery(self) -> list[BaseModel]:
         """Return a list of Mock Gallery Data."""

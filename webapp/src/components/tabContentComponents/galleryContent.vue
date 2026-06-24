@@ -7,8 +7,8 @@
         <div class="uk-grid">
           <div class="gallery-button">
             <multi-select-dropdown
-              v-model="selectedFilter"
-              :options="filterOptions"
+              v-model="selectedCardTypes"
+              :options="allCardTypes"
               title="Filter Gallery"
             />
           </div>
@@ -61,7 +61,7 @@
       <div class="gallery-grid uk-grid-match" uk-grid>
         <div v-if="noItems">
           <h2>Nothing to show</h2>
-          <p>There is no captured data to show..</p>
+          <p>There is no captured data to show.</p>
         </div>
         <div v-for="itemData in paginatedItems" :key="itemData.id">
           <gallery-card
@@ -89,8 +89,7 @@ import galleryModal from "./galleryComponents/galleryViewer.vue";
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
-import { mapState, storeToRefs } from "pinia";
-import { watch } from "vue";
+import { mapState } from "pinia";
 
 // Export main app
 export default {
@@ -112,35 +111,39 @@ export default {
       osdViewer: null,
       currentPage: 1,
       itemsPerPage: 18,
-      selectedFilter: ["Scans", "Captures"],
-      filterOptions: ["Scans", "Captures"],
+      selectedCardTypes: [],
+      allCardTypes: [],
     };
   },
 
   computed: {
     ...mapState(useSettingsStore, ["baseUri", "ready"]),
+    filtered_items() {
+      return this.all_items.filter((item) => this.selectedCardTypes.includes(item.card_type));
+    },
     noItems() {
-      return !this.all_items || this.all_items?.length === 0;
+      return !this.filtered_items || this.filtered_items?.length === 0;
     },
     totalPages() {
-      return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
+      return Math.ceil((this.filtered_items?.length || 0) / this.itemsPerPage);
     },
     paginatedItems() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
-      return (this.all_items || []).slice(start, start + this.itemsPerPage);
+      return (this.filtered_items || []).slice(start, start + this.itemsPerPage);
+    },
+  },
+
+  watch: {
+    totalPages(newPageCount) {
+      if (this.currentPage > newPageCount) {
+        this.currentPage = Math.max(1, newPageCount);
+      } else if (this.currentPage < 1) {
+        this.currentPage == 1;
+      }
     },
   },
 
   async mounted() {
-    const store = useSettingsStore();
-    const { ready } = storeToRefs(store);
-    this.unwatchStoreFunction = watch(ready, (isReady) => {
-      if (isReady) {
-        this.refreshGallery();
-      } else {
-        this.all_items = [];
-      }
-    });
     useIntersectionObserver(
       this.$refs.galleryDisplay,
       ([{ isIntersecting }]) => {
@@ -150,6 +153,8 @@ export default {
         threshold: 0.0, // Adjust as needed
       },
     );
+    this.allCardTypes = await this.readThingProperty("gallery", "card_types");
+    this.selectedCardTypes = this.allCardTypes;
     // Update on mount (does nothing if not connected)
     await this.refreshGallery();
     // A global signal listener to perform a gallery refresh

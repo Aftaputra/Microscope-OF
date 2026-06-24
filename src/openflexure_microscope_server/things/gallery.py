@@ -23,13 +23,13 @@ class GalleryCompatibleThing(Protocol):
     be picked up, but may throw an error when used.
     """
 
+    name: str
+
     # Ensure it is a Thing:
     _thing_server_interface: lt.ThingServerInterface
 
     # Ensure it is an OFMThing:
     show_data_in_gallery: bool
-
-    gallery_data_name: str
 
     gallery_data_schema: type[BaseModel]
 
@@ -45,6 +45,7 @@ class GalleryThing(lt.Thing):
     all_ofm_things: Mapping[str, OFMThing] = lt.thing_slot()
 
     _gallery_providing_things: Optional[Mapping[str, GalleryCompatibleThing]] = None
+    _card_types: Optional[Mapping[str, GalleryCompatibleThing]] = None
 
     @property
     def gallery_providing_things(self) -> Mapping[str, GalleryCompatibleThing]:
@@ -58,6 +59,7 @@ class GalleryThing(lt.Thing):
     def __enter__(self) -> Self:
         """Check for all gallery providing things on server startup."""
         self._set_gallery_providers()
+        self._set_card_types()
         return self
 
     def _set_gallery_providers(self) -> None:
@@ -85,6 +87,29 @@ class GalleryThing(lt.Thing):
         self._gallery_providing_things = cast(
             Mapping[str, GalleryCompatibleThing], gallery_providers
         )
+
+    def _set_card_types(self) -> None:
+        """Find the card types from each provider."""
+        card_types: list[str] = []
+        for thing in self.gallery_providing_things.values():
+            card_schema = thing.gallery_data_schema.schema()
+            props = card_schema["properties"]
+            if "card_type" not in props or "const" not in props["card_type"]:
+                raise TypeError(
+                    f"Gallery data card for {thing.name} doesn't have a staticcard_type"
+                )
+            card_type = props["card_type"]["const"]
+            if card_type not in card_types:
+                card_types.append(card_type)
+
+        self._card_types = card_types
+
+    @lt.property
+    def card_types(self) -> list[str]:
+        """Names for the card types in the gallery."""
+        if self._card_types is None:
+            raise RuntimeError("Cannot access card_types before server has started.")
+        return self._card_types
 
     @lt.property
     def list_data(self) -> list[dict[str, Any]]:
