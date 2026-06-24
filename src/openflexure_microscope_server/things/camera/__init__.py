@@ -360,7 +360,7 @@ class BaseCamera(OFMThing, ABC):
         try:
             os.remove(full_path)
         except IOError as e:
-            self.logger.warning(f"Camera has no image named {name}.")
+            self.logger.warning(f"Failed to delete {name}.")
             raise HTTPException(
                 400, "Couldn't delete capture, check log for details"
             ) from e

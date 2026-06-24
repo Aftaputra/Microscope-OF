@@ -227,7 +227,7 @@ GALLERY_DELETE_TEST_CASES = [
 
 @pytest.mark.parametrize("test_case", GALLERY_DELETE_TEST_CASES)
 def test_gallery_calls_delete(test_case, minimal_gallery_env, mocker):
-    """Test that the gallery delete on all gallery providing things.."""
+    """Test that the gallery deletes on all gallery providing things."""
     # Create a config with the minimal Thing and the bad Thing
     gallery = minimal_gallery_env.get_thing_by_name("gallery")
     thing_1 = minimal_gallery_env.get_thing_by_name("minimal_thing1")

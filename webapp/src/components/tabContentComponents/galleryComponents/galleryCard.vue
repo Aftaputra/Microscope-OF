@@ -112,6 +112,9 @@ export default {
       }
       return `${this.baseUri}/data/${this.itemData.thing}/${this.itemData.name}`;
     },
+    /**
+     * Return True if there is a viewer available for this card's data.
+     */
     viewerAvailable() {
       if (this.itemData.card_type === "Scan") return Boolean(this.itemData?.dzi);
       return true;

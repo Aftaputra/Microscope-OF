@@ -302,7 +302,7 @@ def test_delete_all_scans(entered_smart_scan_thing, caplog, mocker):
         for fake_scan_name in fake_scan_names:
             fake_scan_path = os.path.join(SCAN_DIR, fake_scan_name)
             assert not os.path.exists(fake_scan_path)
-        # No One log generated per scan deleted
+        # One log generated per scan deleted
         assert len(caplog.records) == 4
         for record in caplog.records:
             assert record.message.startswith("Deleting: fake_scan_000")
