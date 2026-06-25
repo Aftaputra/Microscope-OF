@@ -32,6 +32,7 @@ import labthings_fastapi as lt
 
 from openflexure_microscope_server import scan_directories, stitching
 from openflexure_microscope_server.things import OFMThing
+from openflexure_microscope_server.ui import ActionButton, action_button_for
 from openflexure_microscope_server.utilities import coerce_thing_selector
 
 # Things
@@ -198,6 +199,26 @@ class SmartScanThing(OFMThing):
             lt.raise_if_cancelled()
             self.logger.info(f"Deleting: {scan_name}")
             self._delete_scan(scan_name)
+
+    def get_gallery_bulk_actions(self) -> list[ActionButton]:
+        """Return the bulk gallery actions for smart scan."""
+        # Stitch all scans
+        return [
+            action_button_for(
+                self,
+                "stitch_all_scans",
+                submit_label="Stitch All Unstitched Scans",
+                can_terminate=True,
+                button_primary=False,
+                modal_progress=True,
+                requires_confirmation=True,
+                confirmation_message=(
+                    "<h3>Stitch all unstitched scans?</h3>"
+                    "<br>Depending on the number and size of scans, this may be slow, "
+                    "and your microscope should not be used during the stitching.'"
+                ),
+            )
+        ]
 
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.

@@ -332,6 +332,13 @@ class BaseCamera(OFMThing, ABC):
             self.logger.info(f"Deleting: {capture}")
             os.remove(capture)
 
+    def get_gallery_bulk_actions(self) -> list[ActionButton]:
+        """Return the bulk gallery actions for cameras.
+
+        By default there are no bulk actions.
+        """
+        return []
+
     @lt.endpoint(
         "delete",
         "capture/{name}",

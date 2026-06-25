@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.things import OFMThing
+from openflexure_microscope_server.ui import ActionButton
 
 
 @runtime_checkable
@@ -37,6 +38,8 @@ class GalleryCompatibleThing(Protocol):
     def get_data_for_gallery(self) -> list[BaseModel]: ...  # noqa: D102
 
     def delete_all_gallery_items(self) -> None: ...  # noqa: D102
+
+    def get_gallery_bulk_actions(self) -> list[ActionButton]: ...  # noqa: D102
 
 
 class GalleryThing(lt.Thing):
@@ -124,6 +127,19 @@ class GalleryThing(lt.Thing):
         if self._card_types is None:
             raise RuntimeError("Cannot access card_types before server has started.")
         return self._card_types
+
+    # Cache result after first call.
+    _bulk_actions: Optional[list[ActionButton]] = None
+
+    @lt.property
+    def bulk_actions(self) -> list[ActionButton]:
+        """All bulk actions."""
+        if self._bulk_actions is None:
+            actions: list[ActionButton] = []
+            for thing in self.gallery_providing_things.values():
+                actions += thing.get_gallery_bulk_actions()
+            self._bulk_actions = actions
+        return self._bulk_actions
 
     @lt.property
     def list_data(self) -> list[dict[str, Any]]:

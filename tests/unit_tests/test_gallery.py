@@ -15,6 +15,7 @@ from openflexure_microscope_server.things.gallery import (
     GalleryCompatibleThing,
     GalleryThing,
 )
+from openflexure_microscope_server.ui import ActionButton
 
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
@@ -63,6 +64,10 @@ class MinimalGalleryClass:
     def delete_all_gallery_items(self) -> None:
         """Mock deleting all the data."""
 
+    def get_gallery_bulk_actions(self) -> list[ActionButton]:
+        """No bulk actions."""
+        return []
+
 
 class MinimalGallerySource(OFMThing, MinimalGalleryClass):
     """Minimal example of a Thing that can show data in the gallery.
@@ -94,6 +99,10 @@ class BadGallerySource(OFMThing):
     def delete_all_gallery_items(self) -> None:
         """Mock deleting all the data."""
 
+    def get_gallery_bulk_actions(self) -> list[ActionButton]:
+        """No bulk actions."""
+        return []
+
 
 class BadMockGalleryData(BaseModel):
     """Mock gallery data without a card type."""
@@ -118,6 +127,10 @@ class BadGallerySource2(OFMThing):
 
     def delete_all_gallery_items(self) -> None:
         """Mock deleting all the data."""
+
+    def get_gallery_bulk_actions(self) -> list[ActionButton]:
+        """No bulk actions."""
+        return []
 
 
 def test_gallery_compatible_protocol():
