@@ -19,14 +19,19 @@ from openflexure_microscope_server.things.gallery import (
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 
-def test_error_if_accessing_gallery_things_before_started():
-    """Check that gallery_providing_things property errors before init."""
+def test_error_if_accessing_properties_before_started():
+    """Check that unfefined properties errors before enter."""
     thing = create_thing_without_server(GalleryThing)
     with pytest.raises(
         RuntimeError,
         match="Cannot access gallery_providing_things before server has started.",
     ):
         thing.gallery_providing_things
+    with pytest.raises(
+        RuntimeError,
+        match="Cannot access card_types before server has started.",
+    ):
+        thing.card_types
 
 
 class MockGalleryData(BaseModel):
@@ -90,6 +95,31 @@ class BadGallerySource(OFMThing):
         """Mock deleting all the data."""
 
 
+class BadMockGalleryData(BaseModel):
+    """Mock gallery data without a card type."""
+
+    mock: str
+    foobar: int
+
+
+class BadGallerySource2(OFMThing):
+    """An OFMThing that defines enough to show in the gallery with bad card data.
+
+    Matches the protocol but will be rejected when setting card types.
+    """
+
+    show_data_in_gallery = True
+
+    gallery_data_schema: type[BaseModel] = BadMockGalleryData
+
+    def get_data_for_gallery(self) -> list[BaseModel]:
+        """Return a list of Mock Gallery Data."""
+        return [BadMockGalleryData(mock="mock", foobar="foobar")]
+
+    def delete_all_gallery_items(self) -> None:
+        """Mock deleting all the data."""
+
+
 def test_gallery_compatible_protocol():
     """Check the gallery compatible protocol detects compatible classes only."""
     # Minimal class has the gallery specific methods but is not an OFMThing.
@@ -127,18 +157,23 @@ def test_gallery_thing_finds_all_providers(simulation_test_env):
     assert camera in gallery.gallery_providing_things.values()
     assert smart_scan in gallery.gallery_providing_things.values()
 
+    # Also check the card types:
+    assert gallery.card_types == ["Capture", "Scan"]
+    assert gallery._card_type_map == {"camera": "Capture", "smart_scan": "Scan"}
+
     # Also check the runtime checkable protocol GalleryCompatibleThing works directly
     # when called with isinstance.
     assert not isinstance(snake_workflow, GalleryCompatibleThing)
     assert isinstance(smart_scan, GalleryCompatibleThing)
 
 
-def test_gallery_logs_for_bad_providers(caplog):
+@pytest.mark.parametrize("bad_source_class", [BadGallerySource, BadGallerySource2])
+def test_gallery_logs_for_bad_providers(bad_source_class, caplog):
     """Test that an error is logged if a gallery source doesn't match the protocol."""
     # Create a config with the minimal Thing and the bad Thing
     things = {
         "minimal_thing": MinimalGallerySource,
-        "bad_thing": BadGallerySource,
+        "bad_thing": bad_source_class,
         "gallery": GalleryThing,
     }
     with caplog.at_level(logging.INFO):

@@ -44,7 +44,7 @@ class GalleryThing(lt.Thing):
 
     all_ofm_things: Mapping[str, OFMThing] = lt.thing_slot()
 
-    _gallery_providing_things: Optional[Mapping[str, GalleryCompatibleThing]] = None
+    _gallery_providing_things: Optional[dict[str, GalleryCompatibleThing]] = None
     _card_types: Optional[list[str]] = None
     _card_type_map: dict[str, str] = {}
 
@@ -60,7 +60,6 @@ class GalleryThing(lt.Thing):
     def __enter__(self) -> Self:
         """Check for all gallery providing things on server startup."""
         self._set_gallery_providers()
-        self._set_card_types()
         return self
 
     def _set_gallery_providers(self) -> None:
@@ -86,23 +85,36 @@ class GalleryThing(lt.Thing):
         # Cast the type of each thing to "GalleryCompatibleThing" as other Things have
         # been popped.
         self._gallery_providing_things = cast(
-            Mapping[str, GalleryCompatibleThing], gallery_providers
+            dict[str, GalleryCompatibleThing], gallery_providers
         )
+        self._set_card_types(self._gallery_providing_things)
 
-    def _set_card_types(self) -> None:
-        """Find the card types from each provider."""
+    def _set_card_types(
+        self, gallery_providers: dict[str, GalleryCompatibleThing]
+    ) -> None:
+        """Find the card types from each provider.
+
+        :param gallery_providers: The dictionary of gallery providing things. If card
+            data cannot be extracted for a Thing it will be popped from the provider
+            dictionary.
+        """
         card_types: list[str] = []
-        for thing in self.gallery_providing_things.values():
-            card_schema = thing.gallery_data_schema.schema()
+        # cache initial list of keys as it may change in the loop
+        keys = list(gallery_providers.keys())
+        for key in keys:
+            card_schema = gallery_providers[key].gallery_data_schema.schema()
             props = card_schema["properties"]
             if "card_type" not in props or "const" not in props["card_type"]:
-                raise TypeError(
-                    f"Gallery data card for {thing.name} doesn't have a staticcard_type"
+                self.logger.error(
+                    f"Data from {key} cannot be shown in gallery as data card doesn't "
+                    "have a static card_type."
                 )
+                gallery_providers.pop(key)
+                continue
             card_type = props["card_type"]["const"]
             if card_type not in card_types:
                 card_types.append(card_type)
-            self._card_type_map[thing.name] = card_type
+            self._card_type_map[key] = card_type
 
         self._card_types = card_types
 
