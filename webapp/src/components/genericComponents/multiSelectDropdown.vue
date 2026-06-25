@@ -1,15 +1,19 @@
 <template>
   <div ref="multiselect" class="multi-select">
-    <div class="dropdown-top" :class="{ open: isOpen }" @click="isOpen = !isOpen">
+    <div
+      class="dropdown-top ofm-opaque-element ofm-opaque-highlight"
+      :class="{ open: isOpen }"
+      @click="isOpen = !isOpen"
+    >
       <span class="dropdown-top-text">{{ title }}</span>
       <span>{{ arrow }}</span>
     </div>
 
-    <div v-if="isOpen" class="dropdown-menu">
-      <button class="text-button" @click="selectAll">Select All</button>
-      <button class="text-button" @click="selectNone">Select None</button>
+    <div v-if="isOpen" class="dropdown-menu ofm-opaque-element">
+      <button class="ofm-text-button ofm-opaque-highlight" @click="selectAll">Select All</button>
+      <button class="ofm-text-button ofm-opaque-highlight" @click="selectNone">Select None</button>
       <hr class="dropdown-separator" />
-      <label v-for="option in options" :key="option" class="dropdown-item">
+      <label v-for="option in options" :key="option" class="dropdown-item ofm-opaque-highlight">
         <input
           type="checkbox"
           class="uk-checkbox"
@@ -108,7 +112,6 @@ export default {
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
-  background: #f5f5f5;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -130,32 +133,15 @@ export default {
   border-right: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
   border-radius: 0 0 4px 4px;
-  background: #f5f5f5;
   max-height: 250px;
   overflow-y: auto;
   z-index: 1000;
-}
-
-.text-button {
-  display: block;
-  background: none;
-  border: none;
-  padding: 8px 10px;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  font-weight: 600;
 }
 
 .dropdown-item {
   display: block;
   padding: 8px 12px;
   cursor: pointer;
-}
-
-.text-button:hover,
-.dropdown-item:hover {
-  background: #fff;
 }
 
 .dropdown-separator {
