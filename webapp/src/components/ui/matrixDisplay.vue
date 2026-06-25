@@ -15,7 +15,7 @@
     </div>
 
     <button
-      class="copy-button"
+      class="copy-button ofm-muted-interactive-text"
       :class="{ success: copied }"
       :title="'Copy as Python list'"
       @click="copyMatrix"
@@ -142,12 +142,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: @global-muted-color;
   transition: color 0.2s ease;
-}
-
-.copy-button:hover {
-  color: var(--themed-global-colour);
 }
 
 .copy-button.success {

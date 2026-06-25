@@ -81,7 +81,7 @@ export default {
 
 .progress .indeterminate,
 .progress .determinate {
-  background-color: var(--theme-primary-background);
+  background-color: @global-primary-background;
 }
 
 .progress .indeterminate::before {
