@@ -171,11 +171,6 @@ class SmartScanThing(OFMThing):
     _show_data_in_gallery = True
 
     @property
-    def gallery_data_name(self) -> str:
-        """Name under which data shows up in gallery."""
-        return "Scans"
-
-    @property
     def gallery_data_schema(self) -> type[scan_directories.ScanInfo]:
         """The schema (BaseModel) for passing data to the gallery."""
         return scan_directories.ScanInfo

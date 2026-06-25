@@ -267,6 +267,7 @@ export default {
 
 #container-left {
   overflow: auto;
+  scrollbar-gutter: stable;
   background-color: rgba(180, 180, 180, 0.025);
   width: 100%;
   height: 100%;

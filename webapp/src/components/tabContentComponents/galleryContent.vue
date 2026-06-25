@@ -1,10 +1,17 @@
 <template>
-  <div ref="galleryDisplay" class="galleryDisplay uk-padding uk-padding-remove-top">
+  <div ref="galleryDisplay" class="gallery-display uk-padding uk-padding-remove-top">
     <!-- Gallery nav bar -->
     <nav class="gallery-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
+          <div class="gallery-button">
+            <multi-select-dropdown
+              v-model="selectedCardTypes"
+              :options="allCardTypes"
+              title="Filter Gallery"
+            />
+          </div>
           <div class="gallery-button">
             <action-button
               class="uk-width-1-1"
@@ -25,11 +32,13 @@
               thing="gallery"
               action="delete_all_data"
               submit-label="Delete All"
+              :submit-data="{ card_types: selectedCardTypes }"
+              :is-disabled="totalPages == 0"
               :can-terminate="true"
               :button-primary="false"
               :modal-progress="true"
               :requires-confirmation="true"
-              :confirmation-message="'<p>Are you sure you want to delete all gallery data from the microscope?</p><p>This is <b>irreversible</b>!</p>'"
+              :confirmation-message="deleteAllConfirmationMessage"
               @error="modalError"
             />
           </div>
@@ -54,7 +63,7 @@
       <div class="gallery-grid uk-grid-match" uk-grid>
         <div v-if="noItems">
           <h2>Nothing to show</h2>
-          <p>There is no captured data to show..</p>
+          <p>There is no captured data to show.</p>
         </div>
         <div v-for="itemData in paginatedItems" :key="itemData.id">
           <gallery-card
@@ -75,14 +84,14 @@
 
 <script>
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
+import MultiSelectDropdown from "@/components/genericComponents/multiSelectDropdown.vue";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import galleryCard from "./galleryComponents/galleryCard.vue";
 import galleryModal from "./galleryComponents/galleryViewer.vue";
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
-import { mapState, storeToRefs } from "pinia";
-import { watch } from "vue";
+import { mapState } from "pinia";
 
 // Export main app
 export default {
@@ -92,6 +101,7 @@ export default {
     galleryCard,
     galleryModal,
     PaginateLinks,
+    MultiSelectDropdown,
   },
 
   emits: ["scrollTop"],
@@ -103,33 +113,49 @@ export default {
       osdViewer: null,
       currentPage: 1,
       itemsPerPage: 18,
+      selectedCardTypes: [],
+      allCardTypes: [],
     };
   },
 
   computed: {
     ...mapState(useSettingsStore, ["baseUri", "ready"]),
+    filtered_items() {
+      return this.all_items.filter((item) => this.selectedCardTypes.includes(item.card_type));
+    },
     noItems() {
-      return !this.all_items || this.all_items?.length === 0;
+      return !this.filtered_items || this.filtered_items?.length === 0;
     },
     totalPages() {
-      return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
+      return Math.ceil((this.filtered_items?.length || 0) / this.itemsPerPage);
     },
     paginatedItems() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
-      return (this.all_items || []).slice(start, start + this.itemsPerPage);
+      return (this.filtered_items || []).slice(start, start + this.itemsPerPage);
+    },
+    deleteAllConfirmationMessage() {
+      return `
+        <p>Are you sure you want to delete all gallery data with the following types</p>
+        <ul>
+          ${this.selectedCardTypes.map((type) => `<li>${type}</li>`).join("\n")}
+        </ul>
+        <p>from the microscope?</p>
+        <p>This is <b>irreversible</b>!</p>
+      `;
+    },
+  },
+
+  watch: {
+    totalPages(newPageCount) {
+      if (this.currentPage > newPageCount) {
+        this.currentPage = Math.max(1, newPageCount);
+      } else if (this.currentPage < 1) {
+        this.currentPage == 1;
+      }
     },
   },
 
   async mounted() {
-    const store = useSettingsStore();
-    const { ready } = storeToRefs(store);
-    this.unwatchStoreFunction = watch(ready, (isReady) => {
-      if (isReady) {
-        this.refreshGallery();
-      } else {
-        this.all_items = [];
-      }
-    });
     useIntersectionObserver(
       this.$refs.galleryDisplay,
       ([{ isIntersecting }]) => {
@@ -139,6 +165,8 @@ export default {
         threshold: 0.0, // Adjust as needed
       },
     );
+    this.allCardTypes = await this.readThingProperty("gallery", "card_types");
+    this.selectedCardTypes = this.allCardTypes;
     // Update on mount (does nothing if not connected)
     await this.refreshGallery();
     // A global signal listener to perform a gallery refresh

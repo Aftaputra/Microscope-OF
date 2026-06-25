@@ -23,13 +23,13 @@ class GalleryCompatibleThing(Protocol):
     be picked up, but may throw an error when used.
     """
 
+    name: str
+
     # Ensure it is a Thing:
     _thing_server_interface: lt.ThingServerInterface
 
     # Ensure it is an OFMThing:
     show_data_in_gallery: bool
-
-    gallery_data_name: str
 
     gallery_data_schema: type[BaseModel]
 
@@ -44,7 +44,9 @@ class GalleryThing(lt.Thing):
 
     all_ofm_things: Mapping[str, OFMThing] = lt.thing_slot()
 
-    _gallery_providing_things: Optional[Mapping[str, GalleryCompatibleThing]] = None
+    _gallery_providing_things: Optional[dict[str, GalleryCompatibleThing]] = None
+    _card_types: Optional[list[str]] = None
+    _card_type_map: dict[str, str] = {}
 
     @property
     def gallery_providing_things(self) -> Mapping[str, GalleryCompatibleThing]:
@@ -83,8 +85,45 @@ class GalleryThing(lt.Thing):
         # Cast the type of each thing to "GalleryCompatibleThing" as other Things have
         # been popped.
         self._gallery_providing_things = cast(
-            Mapping[str, GalleryCompatibleThing], gallery_providers
+            dict[str, GalleryCompatibleThing], gallery_providers
         )
+        self._set_card_types(self._gallery_providing_things)
+
+    def _set_card_types(
+        self, gallery_providers: dict[str, GalleryCompatibleThing]
+    ) -> None:
+        """Find the card types from each provider.
+
+        :param gallery_providers: The dictionary of gallery providing things. If card
+            data cannot be extracted for a Thing it will be popped from the provider
+            dictionary.
+        """
+        card_types: list[str] = []
+        # cache initial list of keys as it may change in the loop
+        keys = list(gallery_providers.keys())
+        for key in keys:
+            card_schema = gallery_providers[key].gallery_data_schema.schema()
+            props = card_schema["properties"]
+            if "card_type" not in props or "const" not in props["card_type"]:
+                self.logger.error(
+                    f"Data from {key} cannot be shown in gallery as data card doesn't "
+                    "have a static card_type."
+                )
+                gallery_providers.pop(key)
+                continue
+            card_type = props["card_type"]["const"]
+            if card_type not in card_types:
+                card_types.append(card_type)
+            self._card_type_map[key] = card_type
+
+        self._card_types = card_types
+
+    @lt.property
+    def card_types(self) -> list[str]:
+        """Names for the card types in the gallery."""
+        if self._card_types is None:
+            raise RuntimeError("Cannot access card_types before server has started.")
+        return self._card_types
 
     @lt.property
     def list_data(self) -> list[dict[str, Any]]:
@@ -108,10 +147,12 @@ class GalleryThing(lt.Thing):
         return data_list
 
     @lt.action
-    def delete_all_data(self) -> None:
-        """Delete all the gallery data on this microscope."""
+    def delete_all_data(self, card_types: list[str]) -> None:
+        """Delete all the gallery data on this microscope with the given card types."""
         for thing in self.gallery_providing_things.values():
-            try:
-                thing.delete_all_gallery_items()
-            except Exception as e:
-                self.logger.exception(e)
+            thing_card_type = self._card_type_map.get(thing.name)
+            if thing_card_type in card_types:
+                try:
+                    thing.delete_all_gallery_items()
+                except Exception as e:
+                    self.logger.exception(e)
