@@ -1,47 +1,10 @@
 <template>
-  <div ref="galleryDisplay" class="gallery-display uk-padding uk-padding-remove-top">
+  <div ref="galleryDisplay" class="gallery-display">
     <!-- Gallery nav bar -->
-    <nav class="gallery-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
+    <nav class="ofm-tab-navbar">
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
-          <div class="gallery-button">
-            <multi-select-dropdown
-              v-model="selectedCardTypes"
-              :options="allCardTypes"
-              title="Filter Gallery"
-            />
-          </div>
-          <div class="gallery-button">
-            <action-button
-              class="uk-width-1-1"
-              thing="smart_scan"
-              action="stitch_all_scans"
-              submit-label="Stitch All Remaining"
-              :can-terminate="true"
-              :button-primary="false"
-              :modal-progress="true"
-              :requires-confirmation="true"
-              :confirmation-message="'<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'"
-              @error="modalError"
-            />
-          </div>
-          <div class="gallery-button">
-            <action-button
-              class="uk-width-1-1"
-              thing="gallery"
-              action="delete_all_data"
-              submit-label="Delete All"
-              :submit-data="{ card_types: selectedCardTypes }"
-              :is-disabled="totalPages == 0"
-              :can-terminate="true"
-              :button-primary="false"
-              :modal-progress="true"
-              :requires-confirmation="true"
-              :confirmation-message="deleteAllConfirmationMessage"
-              @error="modalError"
-            />
-          </div>
           <div>
             <button
               class="uk-button uk-button-default uk-width-1-1 gallery-button"
@@ -51,6 +14,15 @@
               Refresh
             </button>
           </div>
+          <div>
+            <button
+              class="sidebar-toggle uk-button uk-button-default uk-width-1-1 gallery-button"
+              type="button"
+              @click="sidebarOpen = !sidebarOpen"
+            >
+              <div class="sidebar-toggle-text" :class="{ open: sidebarOpen }">❮</div>
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -58,34 +30,74 @@
     <gallery-modal ref="viewerModal" :selected-item="selectedItem" :base-uri="baseUri" />
 
     <!-- Gallery -->
-    <div v-if="ready" class="uk-padding-remove-top" uk-lightbox="toggle: .lightbox-link">
+    <div
+      v-if="ready"
+      class="ofm-container-with-sidebar"
+      :class="{ 'sidebar-open': sidebarOpen }"
+      uk-lightbox="toggle: .lightbox-link"
+    >
       <!-- Gallery capture cards -->
-      <div class="gallery-grid uk-grid-match" uk-grid>
-        <div v-if="noItems">
-          <h2>Nothing to show</h2>
-          <p>There is no captured data to show.</p>
+      <main class="gallery-main">
+        <div class="gallery-grid uk-grid-match" uk-grid>
+          <div v-if="noItems">
+            <h2>Nothing to show</h2>
+            <p>There is no captured data to show.</p>
+          </div>
+          <div v-for="itemData in paginatedItems" :key="itemData.id">
+            <gallery-card
+              :item-data="itemData"
+              @viewer-requested="showItem"
+              @update-requested="refreshGallery"
+            />
+          </div>
         </div>
-        <div v-for="itemData in paginatedItems" :key="itemData.id">
-          <gallery-card
-            :item-data="itemData"
-            @viewer-requested="showItem"
-            @update-requested="refreshGallery"
+        <PaginateLinks
+          :total-pages="totalPages"
+          :current-page="currentPage"
+          @change-page="changePage"
+        />
+      </main>
+      <aside id="sidebar" class="ofm-sidebar" :class="{ open: sidebarOpen }">
+        <div class="gallery-button">
+          <multi-select-dropdown
+            v-model="selectedCardTypes"
+            :options="allCardTypes"
+            title="Filter Gallery"
           />
         </div>
-      </div>
+        <div
+          v-for="bulkAction in bulkActions"
+          :key="'action' + bulkAction.thing + bulkAction.action"
+          class="gallery-button"
+        >
+          <server-specified-action-button :action-data="bulkAction" @error="modalError" />
+        </div>
+        <div class="gallery-button">
+          <action-button
+            class="uk-width-1-1"
+            thing="gallery"
+            action="delete_all_data"
+            submit-label="Delete All"
+            :submit-data="{ card_types: selectedCardTypes }"
+            :is-disabled="totalPages == 0"
+            :can-terminate="true"
+            :button-primary="false"
+            :modal-progress="true"
+            :requires-confirmation="true"
+            :confirmation-message="deleteAllConfirmationMessage"
+            @error="modalError"
+          />
+        </div>
+      </aside>
     </div>
-    <PaginateLinks
-      :total-pages="totalPages"
-      :current-page="currentPage"
-      @change-page="changePage"
-    />
   </div>
 </template>
 
 <script>
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import MultiSelectDropdown from "@/components/genericComponents/multiSelectDropdown.vue";
-import actionButton from "../labThingsComponents/actionButton.vue";
+import actionButton from "@/components/labThingsComponents/actionButton.vue";
+import ServerSpecifiedActionButton from "@/components/labThingsComponents/serverSpecifiedActionButton.vue";
 import galleryCard from "./galleryComponents/galleryCard.vue";
 import galleryModal from "./galleryComponents/galleryViewer.vue";
 import { eventBus } from "../../eventBus.js";
@@ -102,6 +114,7 @@ export default {
     galleryModal,
     PaginateLinks,
     MultiSelectDropdown,
+    ServerSpecifiedActionButton,
   },
 
   emits: ["scrollTop"],
@@ -115,6 +128,8 @@ export default {
       itemsPerPage: 18,
       selectedCardTypes: [],
       allCardTypes: [],
+      bulkActions: [],
+      sidebarOpen: false,
     };
   },
 
@@ -167,6 +182,7 @@ export default {
     );
     this.allCardTypes = await this.readThingProperty("gallery", "card_types");
     this.selectedCardTypes = this.allCardTypes;
+    this.bulkActions = await this.readThingProperty("gallery", "bulk_actions");
     // Update on mount (does nothing if not connected)
     await this.refreshGallery();
     // A global signal listener to perform a gallery refresh
@@ -239,19 +255,34 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.gallery-navbar {
-  border-width: 0 0 1px;
-  border-style: solid;
-  border-color: rgba(180, 180, 180, 0.25);
+.gallery-display {
+  height: 100%;
+  overflow-y: hidden;
 }
 
-.gallery-navbar,
-.gallery-folder-heading {
-  margin-bottom: 30px;
+.gallery-main {
+  height: calc(100% - var(--ofm-navbar-height));
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding-left: 20px;
+  padding-top: 20px;
 }
 
 .gallery-button {
   margin-top: 5px;
   margin-bottom: 2px;
+}
+
+.sidebar-toggle {
+  width: 40px;
+}
+
+.sidebar-toggle-text {
+  font-size: 24px;
+  transition: transform 0.25s ease;
+}
+
+.sidebar-toggle-text.open {
+  transform: rotate(180deg);
 }
 </style>
