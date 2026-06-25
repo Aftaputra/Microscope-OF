@@ -174,6 +174,16 @@ def test_gallery_thing_finds_all_providers(simulation_test_env):
     assert gallery.card_types == ["Capture", "Scan"]
     assert gallery._card_type_map == {"camera": "Capture", "smart_scan": "Scan"}
 
+    # Also check all bulk actions
+    bulk_actions = gallery.bulk_actions
+    # Only actions should be stitch all scans
+    assert len(bulk_actions) == 1
+    assert bulk_actions[0].thing == "smart_scan"
+    assert bulk_actions[0].action == "stitch_all_scans"
+    assert bulk_actions[0].can_terminate
+    assert bulk_actions[0].requires_confirmation
+    assert "Stitch all unstitched scans?" in bulk_actions[0].confirmation_message
+
     # Also check the runtime checkable protocol GalleryCompatibleThing works directly
     # when called with isinstance.
     assert not isinstance(snake_workflow, GalleryCompatibleThing)
