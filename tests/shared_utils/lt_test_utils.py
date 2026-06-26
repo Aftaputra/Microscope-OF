@@ -60,7 +60,7 @@ class LabThingsTestEnv:
         # Any OFMThings require an application config for the data_folder
         if self._application_config is None:
             self._data_tmp_dir = tempfile.TemporaryDirectory()
-            self._application_config = {"data_folder": self._data_tmp_dir}
+            self._application_config = {"data_folder": self._data_tmp_dir.name}
         if self._settings_folder is None:
             self._settings_tmp_dir = tempfile.TemporaryDirectory()
             self._settings_folder = self._settings_tmp_dir.name
