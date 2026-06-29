@@ -1,4 +1,4 @@
-"""File contains all the functions used to measure the stage against the camera.
+"""File contains functions used to measure the stage against the camera.
 
 This includes:
 
