@@ -2,7 +2,6 @@
 
 This includes:
 
-* Calibrating the relationship between camera and stage coordinates.
 * Finding the centre of motion
 * Measuring the range of motion
 """
