@@ -143,11 +143,11 @@ class StageMeasurementThing(OFMThing):
         expected and has not reached the edge. Once the edge has been found and to
         account for the possibility that the edge was reached during a "big" step, the
         stage is moved in a sequence of steps in the opposite direction until motion is
-        detected. This is position is taken as the final position.
+        detected. This position is taken as the final position.
 
         Throughout the test, parasitic motion (motion in the axis not being measured)
         is tracked and an error is raised if it exceeds a minimum amount. Currently
-        this is 10% of the expected motion is the measured axis.
+        this is 10% of the expected motion in the measured axis.
 
         :return: Results dictionary separated into keys of each axis and direction.
         """
