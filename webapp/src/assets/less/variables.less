@@ -198,10 +198,18 @@
     }
 }
 
+/*
+ * OpenFlexure tabs.
+ *
+ * The ofm-* rules are global rules that are written for the to OFM interface (as opposed to
+ * imported global rules). All tab content is in an `ofm-tab`
+ */
+
 .ofm-tab {
     --ofm-navbar-height: 50px;
 }
 
+// For adding a nav bar at the top of an `.ofm-tab`
 .ofm-tab-navbar {
   position: sticky;
   top: 0;
@@ -222,7 +230,10 @@
 }
 
 /*
- * Sidebar
+ * A container with a sidebar.
+ *
+ * This is designed to be used inside an `.ofm-tab` to create a container with a sidebar that can be
+ * opened on the right hand side.
  */
 .ofm-container-with-sidebar
 {
