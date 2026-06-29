@@ -1,16 +1,9 @@
-"""File contains all the functions used to measure the range of motion.
+"""File contains functions used to measure the stage against the camera.
 
-The range of motion is measured by first taking 5 'medium' sized steps which gives
-enough positions to predict future z positions. Next, one 'big' step is taken followed
-by 3 'small' steps to test that the stage is still moving as expected and has not
-reached the edge. Once the edge has been found and to account for the possibility that
-the edge was reached during a "big" step, the stage is moved in a sequence of steps
-in the opposite direction until motion is detected. This is position is taken as the
-true final position.
+This includes:
 
-Throughout the test, parasitic motion (motion in the axis not being measured)
-is tracked and an error is raised if it exceeds a minimum amount. Currently
-this is 10% of the expected motion is the measured axis.
+* Finding the centre of motion
+* Measuring the range of motion
 """
 
 import json
@@ -43,8 +36,8 @@ PARASITIC_MOTION_TOL = 0.1
 DETECT_MOTION_TOL = 0.65
 
 
-class RomDataTracker:
-    """Class for tracking range of motion data.
+class CamStageTracker:
+    """Class for tracking camera and stage movement together.
 
     The attributes storing data are:
 
@@ -119,7 +112,7 @@ class ParasiticMotionError(lt.exceptions.InvocationError):
     """
 
 
-class RangeofMotionThing(OFMThing):
+class StageMeasurementThing(OFMThing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
     _class_settings = {"validate_properties_on_set": True}
@@ -138,11 +131,23 @@ class RangeofMotionThing(OFMThing):
         super().__init__(thing_server_interface)
         self._lock = Lock()
         self._stream_resolution: Optional[tuple[int, int]] = None
-        self._rom_data = RomDataTracker()
+        self._cam_stage_data = CamStageTracker()
 
     @lt.action
     def perform_rom_test(self) -> Mapping[str, Any]:
         """Measures the range of motion of the stage across the x and y axes.
+
+        The range of motion is measured by first taking 5 'medium' sized steps which
+        gives enough positions to predict future z positions. Next, one 'big' step is
+        taken followed by 3 'small' steps to test that the stage is still moving as
+        expected and has not reached the edge. Once the edge has been found and to
+        account for the possibility that the edge was reached during a "big" step, the
+        stage is moved in a sequence of steps in the opposite direction until motion is
+        detected. This position is taken as the final position.
+
+        Throughout the test, parasitic motion (motion in the axis not being measured)
+        is tracked and an error is raised if it exceeds a minimum amount. Currently
+        this is 10% of the expected motion in the measured axis.
 
         :return: Results dictionary separated into keys of each axis and direction.
         """
@@ -175,13 +180,15 @@ class RangeofMotionThing(OFMThing):
                 axis_limits = []
                 for axis_dir in directions:
                     # Create a new tracker at start of measurement.
-                    self._rom_data = RomDataTracker()
+                    self._cam_stage_data = CamStageTracker()
                     self._move_until_edge(axis=axis, direction=axis_dir)
                     # Append final position from tracker
-                    axis_limits.append(self._rom_data.final_position[axis])
+                    axis_limits.append(self._cam_stage_data.final_position[axis])
                     axis_string = "positive" if axis_dir == 1 else "negative"
-                    stage_dic[f"{axis}_{axis_string}"] = self._rom_data.stage_coords
-                    cor_dic[f"{axis}_{axis_string}"] = self._rom_data.offsets
+                    stage_dic[f"{axis}_{axis_string}"] = (
+                        self._cam_stage_data.stage_coords
+                    )
+                    cor_dic[f"{axis}_{axis_string}"] = self._cam_stage_data.offsets
                 # Calculate step range.
                 step_range.append(abs(axis_limits[0] - axis_limits[1]))
 
@@ -261,7 +268,7 @@ class RangeofMotionThing(OFMThing):
         # Start by performing an autofocus and recording starting position
         self._autofocus.looping_autofocus(dz=1000)
         starting_position = self._stage.position
-        self._rom_data.stage_coords.append(starting_position)
+        self._cam_stage_data.stage_coords.append(starting_position)
 
         try:
             dir_str = "positive" if direction == 1 else "negative"
@@ -278,7 +285,7 @@ class RangeofMotionThing(OFMThing):
                 self._big_z_corrected_movement(axis=axis, direction=direction)
                 # Autofocus and record position
                 self._autofocus.looping_autofocus(dz=800)
-                self._rom_data.stage_coords.append(self._stage.position)
+                self._cam_stage_data.stage_coords.append(self._stage.position)
 
                 # Perform small moves to check stage is still moving.
                 still_moving = self._stage_still_moves(axis=axis, direction=direction)
@@ -289,7 +296,7 @@ class RangeofMotionThing(OFMThing):
             self._move_back_until_motion_detected(axis=axis, direction=direction)
 
             # Replace final position.
-            self._rom_data.stage_coords[-1] = self._stage.position
+            self._cam_stage_data.stage_coords[-1] = self._stage.position
 
         finally:
             self._stage.move_absolute(
@@ -303,7 +310,7 @@ class RangeofMotionThing(OFMThing):
         """
         self.logger.info(f"Finding centre in {axis}.")
         # A new tracker for this axis.
-        self._rom_data = RomDataTracker()
+        self._cam_stage_data = CamStageTracker()
         # Direction is in image coords, initial assumption is that centre is at (0,0).
         direction = self._img_dir_from_stage_coords({"x": 0, "y": 0, "z": 0}, axis)
 
@@ -313,7 +320,7 @@ class RangeofMotionThing(OFMThing):
             # Find z then make a number of moves (autofocussing and logging position)
             # 5 moves initially (2 subsequently).
             self._autofocus.looping_autofocus(dz=1000)
-            self._rom_data.stage_coords.append(self._stage.position)
+            self._cam_stage_data.stage_coords.append(self._stage.position)
             self._moves_for_z_prediction(
                 axis=axis,
                 direction=direction,
@@ -348,7 +355,7 @@ class RangeofMotionThing(OFMThing):
             False for "the stage is not centred". The second value is the direction to
             move in, this only has meaning if the first value is False.
         """
-        estimate = self._rom_data.find_turning_point(axis=axis)
+        estimate = self._cam_stage_data.find_turning_point(axis=axis)
         img_perc = self._distance_in_img_percentage(estimate, axis)
 
         # if the distance is less than 1 big step away then move to it and exit
@@ -462,7 +469,7 @@ class RangeofMotionThing(OFMThing):
         for _loop in range(n_moves):
             offset = self._move_and_measure(movement=movement)
 
-            self._rom_data.record_movement(self._stage.position, offset)
+            self._cam_stage_data.record_movement(self._stage.position, offset)
             if _parasitic_motion_detected(movement, offset):
                 raise ParasiticMotionError(
                     "Parasitic motion detected during images to calculate z-curvature. "
@@ -486,7 +493,7 @@ class RangeofMotionThing(OFMThing):
         # Convert to stage coordinates
         stage_movement = self._csm.convert_image_to_stage_coordinates(**movement)
 
-        z_disp = self._rom_data.predict_z_displacement(
+        z_disp = self._cam_stage_data.predict_z_displacement(
             axis=axis,
             stage_movement=stage_movement,
             stage_position=self._stage.position,
@@ -527,7 +534,7 @@ class RangeofMotionThing(OFMThing):
             )
             parasitic_motion = _parasitic_motion_detected(movement, offset)
             self.logger.info(f"Offset measured as {int(offset[axis])}")
-            self._rom_data.record_movement(self._stage.position, offset)
+            self._cam_stage_data.record_movement(self._stage.position, offset)
 
             if abs(offset[axis]) < abs_min_offset or parasitic_motion:
                 # If the offset is below the abs min offset, or significant

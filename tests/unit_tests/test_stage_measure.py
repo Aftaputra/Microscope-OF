@@ -51,8 +51,8 @@ def csm_matrix():
 
 
 @pytest.fixture
-def example_rom_data():
-    """Return some example data in a RomDataTracker."""
+def example_cam_stage_data():
+    """Return some example data in a CamStageTracker."""
     mock_positions = [
         {"x": 0, "y": 0, "z": 42},
         {"x": 727, "y": 2, "z": 154},
@@ -61,18 +61,18 @@ def example_rom_data():
         {"x": 2908, "y": 8, "z": 430},
         {"x": 3635, "y": 10, "z": 490},
     ]
-    rom_data = stage_measure.RomDataTracker()
+    cam_stage_data = stage_measure.CamStageTracker()
 
     # loop through mock positions recording them with an offset.
     for position in mock_positions:
         offset = {"x": 54.4, "y": 0}
-        rom_data.record_movement(position, offset)
-    return rom_data
+        cam_stage_data.record_movement(position, offset)
+    return cam_stage_data
 
 
-def test_predict_z(example_rom_data):
+def test_predict_z(example_cam_stage_data):
     """Check that the prediction for the next z position is correct."""
-    mock_z_diff = example_rom_data.predict_z_displacement(
+    mock_z_diff = example_cam_stage_data.predict_z_displacement(
         axis="x",
         stage_movement={"x": 5243, "y": 0},
         stage_position={"x": 3635, "y": 10, "z": 490},
@@ -81,9 +81,9 @@ def test_predict_z(example_rom_data):
     assert mock_z_diff == expected_z_diff
 
 
-def test_find_tuning_point(example_rom_data):
+def test_find_tuning_point(example_cam_stage_data):
     """Check that the prediction for the tuning point and z position."""
-    mock_turn = example_rom_data.find_turning_point(axis="x")
+    mock_turn = example_cam_stage_data.find_turning_point(axis="x")
     expected_turning = {"x": 7580, "y": 10, "z": 661}
     assert mock_turn == expected_turning
 
@@ -141,24 +141,28 @@ def test_parasitic_detect(par_fraction, too_high):
 
 def test_error_if_no_stream_res_set_when_requesting_img_coords():
     """Check a RuntimeError thrown when requesting image coordinates if resolution unset."""
-    rom_thing = create_thing_without_server(
-        stage_measure.RangeofMotionThing, mock_all_slots=True
+    stage_measure_thing = create_thing_without_server(
+        stage_measure.StageMeasurementThing, mock_all_slots=True
     )
     with pytest.raises(RuntimeError, match="Stream resolution must be set"):
-        rom_thing._img_percentage_to_img_coords(20, "x")
+        stage_measure_thing._img_percentage_to_img_coords(20, "x")
 
 
 @pytest.fixture
-def rom_thing(example_rom_data, csm_matrix, mocker) -> stage_measure.RangeofMotionThing:
-    """Yield a RangeofMotionThing already populated with some example rom_data."""
-    rom_thing = create_thing_without_server(
-        stage_measure.RangeofMotionThing, mock_all_slots=True
+def stage_measure_thing(
+    example_cam_stage_data, csm_matrix, mocker
+) -> stage_measure.StageMeasurementThing:
+    """Yield a StageMeasurementThing already populated with some example cam_stage_data."""
+    stage_measure_thing = create_thing_without_server(
+        stage_measure.StageMeasurementThing, mock_all_slots=True
     )
-    type(rom_thing._thing_server_interface).application_config = mocker.PropertyMock(
+    type(
+        stage_measure_thing._thing_server_interface
+    ).application_config = mocker.PropertyMock(
         return_value={"data_folder": tempfile.gettempdir()}
     )
-    rom_thing._stream_resolution = [800, 600]
-    rom_thing._rom_data = example_rom_data
+    stage_measure_thing._stream_resolution = [800, 600]
+    stage_measure_thing._cam_stage_data = example_cam_stage_data
 
     def apply_csm(x: float, y: float, **_kwargs: float) -> dict[str, int]:
         """Convert image coordinates to stage coordinates."""
@@ -168,13 +172,18 @@ def rom_thing(example_rom_data, csm_matrix, mocker) -> stage_measure.RangeofMoti
         """Convert stage coordinates to image coordinates."""
         return csm_stage_to_img(csm_matrix, x=x, y=y)
 
-    rom_thing._cam.image_is_sample.return_value = (True, "Mocked not measured.")
+    stage_measure_thing._cam.image_is_sample.return_value = (
+        True,
+        "Mocked not measured.",
+    )
 
     # Set up mock csm to return a CSM matrix
-    rom_thing._csm.image_to_stage_displacement_matrix = csm_matrix
-    rom_thing._csm.convert_image_to_stage_coordinates.side_effect = apply_csm
-    rom_thing._csm.convert_stage_to_image_coordinates.side_effect = un_apply_csm
-    return rom_thing
+    stage_measure_thing._csm.image_to_stage_displacement_matrix = csm_matrix
+    stage_measure_thing._csm.convert_image_to_stage_coordinates.side_effect = apply_csm
+    stage_measure_thing._csm.convert_stage_to_image_coordinates.side_effect = (
+        un_apply_csm
+    )
+    return stage_measure_thing
 
 
 @pytest.mark.parametrize(
@@ -187,18 +196,20 @@ def rom_thing(example_rom_data, csm_matrix, mocker) -> stage_measure.RangeofMoti
         ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", 1),
     ],
 )
-def test_img_dir_from_stage_coords(pos, target_pos, axis, expected_dir, rom_thing):
+def test_img_dir_from_stage_coords(
+    pos, target_pos, axis, expected_dir, stage_measure_thing
+):
     """Check image direction is correctly generated."""
-    rom_thing._stage.position = pos
-    direction = rom_thing._img_dir_from_stage_coords(target_pos, axis)
+    stage_measure_thing._stage.position = pos
+    direction = stage_measure_thing._img_dir_from_stage_coords(target_pos, axis)
     assert direction == expected_dir
 
 
-def test_distance_in_img_percentage_err(rom_thing):
+def test_distance_in_img_percentage_err(stage_measure_thing):
     """Check that _distance_in_img_percentage throws error if stream res is not set."""
-    rom_thing._stream_resolution = None
+    stage_measure_thing._stream_resolution = None
     with pytest.raises(RuntimeError):
-        rom_thing._distance_in_img_percentage({"x": 0, "y": 0, "z": 0}, "x")
+        stage_measure_thing._distance_in_img_percentage({"x": 0, "y": 0, "z": 0}, "x")
 
 
 @pytest.mark.parametrize(
@@ -211,15 +222,17 @@ def test_distance_in_img_percentage_err(rom_thing):
         ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", 462.131),
     ],
 )
-def test_distance_in_img_percentage(pos, target_pos, axis, expected_perc, rom_thing):
+def test_distance_in_img_percentage(
+    pos, target_pos, axis, expected_perc, stage_measure_thing
+):
     """Check _distance_in_img_percentage calculates expected values based on mock CSM."""
-    rom_thing._stage.position = pos
-    img_perc = rom_thing._distance_in_img_percentage(target_pos, axis)
+    stage_measure_thing._stage.position = pos
+    img_perc = stage_measure_thing._distance_in_img_percentage(target_pos, axis)
     assert round(img_perc, 3) == expected_perc
 
 
-def test_offset_from(rom_thing, mocker):
-    """Check the calls and returns for RangeofMotionThing._offset_from."""
+def test_offset_from(stage_measure_thing, mocker):
+    """Check the calls and returns for StageMeasurementThing._offset_from."""
     # Set up mock for the FFT displacement
     disp_between_route = (
         "openflexure_microscope_server.things.stage_measure."
@@ -231,14 +244,14 @@ def test_offset_from(rom_thing, mocker):
     )
 
     # Run it
-    offset = rom_thing._offset_from(before_img="MOCK_IMAGE")
+    offset = stage_measure_thing._offset_from(before_img="MOCK_IMAGE")
 
     # Check the offset is a dictionary with the correct values for the axes
     assert offset["x"] == 456
     assert offset["y"] == 123
     # Check 1 image was taken
-    assert rom_thing._cam.grab_as_array.call_count == 1
-    mock_after_image = rom_thing._cam.grab_as_array.return_value
+    assert stage_measure_thing._cam.grab_as_array.call_count == 1
+    mock_after_image = stage_measure_thing._cam.grab_as_array.return_value
     # Check the FFT displacement was called once
     assert mock_disp_between.call_count == 1
     displacement_kwargs = mock_disp_between.call_args.kwargs
@@ -248,25 +261,31 @@ def test_offset_from(rom_thing, mocker):
 
 
 @pytest.mark.parametrize("perform_autofocus", [True, False])
-def test_move_and_measure(perform_autofocus, rom_thing, mocker):
+def test_move_and_measure(perform_autofocus, stage_measure_thing, mocker):
     """Test _move_and_measure with and without initial autofocus checking call counts.
 
     This doesn't test with the repeated autofocus if motion isn't detected
     """
     mock_offset_value = {"x": 100, "y": 3}
-    mocker.patch.object(rom_thing, "_offset_from", return_value=mock_offset_value)
+    mocker.patch.object(
+        stage_measure_thing, "_offset_from", return_value=mock_offset_value
+    )
     movement = {"x": 100, "y": 0}
-    offset = rom_thing._move_and_measure(
+    offset = stage_measure_thing._move_and_measure(
         movement=movement, perform_autofocus=perform_autofocus
     )
 
     # Check exactly 1 move
-    assert rom_thing._csm.move_in_image_coordinates.call_count == 1
+    assert stage_measure_thing._csm.move_in_image_coordinates.call_count == 1
     # The kwargs of the call should movement dict
-    assert rom_thing._csm.move_in_image_coordinates.call_args.kwargs == movement
+    assert (
+        stage_measure_thing._csm.move_in_image_coordinates.call_args.kwargs == movement
+    )
     # Check autofocus call count
     expected_af_count = 1 if perform_autofocus else 0
-    assert rom_thing._autofocus.looping_autofocus.call_count == expected_af_count
+    assert (
+        stage_measure_thing._autofocus.looping_autofocus.call_count == expected_af_count
+    )
     # And check final return
     assert offset == mock_offset_value
 
@@ -284,43 +303,47 @@ def test_move_and_measure(perform_autofocus, rom_thing, mocker):
     ],
 )
 def test_move_and_measure_with_refocus(
-    x_offsets, n_offset_measures, expected_return, rom_thing, mocker
+    x_offsets, n_offset_measures, expected_return, stage_measure_thing, mocker
 ):
     """Test _move_and_measure with final refocus if offset is too small."""
     return_dicts = tuple({"x": x, "y": 0} for x in x_offsets)
     offset_from_mock = mocker.patch.object(
-        rom_thing, "_offset_from", side_effect=return_dicts
+        stage_measure_thing, "_offset_from", side_effect=return_dicts
     )
     movement = {"x": 10, "y": 0}
-    offset = rom_thing._move_and_measure(
+    offset = stage_measure_thing._move_and_measure(
         movement=movement,
         perform_autofocus=False,
         max_autofocus_repeats=3,
         abs_min_offset=5,
     )
     # Check exactly 1 move
-    assert rom_thing._csm.move_in_image_coordinates.call_count == 1
+    assert stage_measure_thing._csm.move_in_image_coordinates.call_count == 1
     # Check expected _offset_from calls
     assert offset_from_mock.call_count == n_offset_measures
     # The kwargs of the call should movement dict
-    assert rom_thing._csm.move_in_image_coordinates.call_args.kwargs == movement
+    assert (
+        stage_measure_thing._csm.move_in_image_coordinates.call_args.kwargs == movement
+    )
     # Check autofocus call count is 1 less than number of offset measures as no autofocus
     # is performed before the first one
     expected_af_count = n_offset_measures - 1
-    assert rom_thing._autofocus.looping_autofocus.call_count == expected_af_count
+    assert (
+        stage_measure_thing._autofocus.looping_autofocus.call_count == expected_af_count
+    )
     # And check final return
     assert offset == expected_return
 
 
-def test_move_and_measure_with_bad_refocus_args(rom_thing, mocker):
+def test_move_and_measure_with_bad_refocus_args(stage_measure_thing, mocker):
     """Check error if abs_min_offset is not positive when using it to determine if to autofocus."""
     offset_from_mock = mocker.patch.object(
-        rom_thing, "_offset_from", return_value={"x": 0, "y": 0}
+        stage_measure_thing, "_offset_from", return_value={"x": 0, "y": 0}
     )
 
     # First check with abs_min_offset not set. The default should be zero.
     with pytest.raises(ValueError, match="abs_min_offset must be positive"):
-        rom_thing._move_and_measure(
+        stage_measure_thing._move_and_measure(
             movement={"x": 10, "y": 0},
             perform_autofocus=False,
             max_autofocus_repeats=3,
@@ -328,7 +351,7 @@ def test_move_and_measure_with_bad_refocus_args(rom_thing, mocker):
     # Then check with abs_min_offset negative, this might happen if the the expected
     # move calculation is not made absolute.
     with pytest.raises(ValueError, match="abs_min_offset must be positive"):
-        rom_thing._move_and_measure(
+        stage_measure_thing._move_and_measure(
             movement={"x": 10, "y": 0},
             perform_autofocus=False,
             max_autofocus_repeats=3,
@@ -338,18 +361,18 @@ def test_move_and_measure_with_bad_refocus_args(rom_thing, mocker):
     assert offset_from_mock.call_count == 0
 
 
-def test_move_back_until_motion_detected(rom_thing, mocker):
+def test_move_back_until_motion_detected(stage_measure_thing, mocker):
     """Check that _move_back_until_motion_detected is making increasing negative moves.
 
     The moves for this method should be in opposite direction to the direction
     specified as this is moving back after the stage reaches end of its movement.
     """
     mock_move_n_meas = mocker.patch.object(
-        rom_thing, "_move_and_measure", return_value={"x": 0, "y": 0}
+        stage_measure_thing, "_move_and_measure", return_value={"x": 0, "y": 0}
     )
 
     with pytest.raises(RuntimeError, match="Cannot detect motion again"):
-        rom_thing._move_back_until_motion_detected("y", -1)
+        stage_measure_thing._move_back_until_motion_detected("y", -1)
 
     max_tries = int(1.5 * stage_measure.BIG_STEP / stage_measure.SMALL_STEP)
     expected_step = 800 * stage_measure.SMALL_STEP / 100
@@ -367,7 +390,7 @@ def test_move_back_until_motion_detected(rom_thing, mocker):
     )
 
     # Other axis and direction this time
-    rom_thing._move_back_until_motion_detected("x", 1)
+    stage_measure_thing._move_back_until_motion_detected("x", 1)
 
     # Should only be called 3 times
     assert mock_move_n_meas.call_count == 3
@@ -397,7 +420,7 @@ def test_stage_still_moves(
     good_moves,
     expected_to_detect_motion,
     offset_calls,
-    rom_thing,
+    stage_measure_thing,
     mocker,
 ):
     """Test _stage_still_moves correctly detects stage movement."""
@@ -412,141 +435,147 @@ def test_stage_still_moves(
             i += 1
 
     mock_offset_from = mocker.patch.object(
-        rom_thing, "_offset_from", side_effect=gen_offsets()
+        stage_measure_thing, "_offset_from", side_effect=gen_offsets()
     )
 
-    still_moves = rom_thing._stage_still_moves(axis="x", direction=1)
+    still_moves = stage_measure_thing._stage_still_moves(axis="x", direction=1)
     assert still_moves is expected_to_detect_motion
     assert mock_offset_from.call_count == offset_calls
 
 
-def test_big_z_corrected_movement(rom_thing):
+def test_big_z_corrected_movement(stage_measure_thing):
     """Check big z corrected move moves in x/y and z the expected distances."""
-    rom_thing._stage.position = {"x": 5000, "y": 30, "z": 500}
+    stage_measure_thing._stage.position = {"x": 5000, "y": 30, "z": 500}
 
-    rom_thing._big_z_corrected_movement("x", direction=1)
+    stage_measure_thing._big_z_corrected_movement("x", direction=1)
 
     expected_movement = {"x": 800 * stage_measure.BIG_STEP / 100, "y": 0}
 
     # Check there is one z move in steps
-    assert rom_thing._stage.move_relative.call_count == 1
-    move_kwargs = rom_thing._stage.move_relative.call_args.kwargs
+    assert stage_measure_thing._stage.move_relative.call_count == 1
+    move_kwargs = stage_measure_thing._stage.move_relative.call_args.kwargs
     assert "x" not in move_kwargs
     assert "y" not in move_kwargs
     assert "z" in move_kwargs
     assert move_kwargs["z"] == 160
 
     # And one move in image coordinates
-    assert rom_thing._csm.move_in_image_coordinates.call_count == 1
-    lat_mov_kwargs = rom_thing._csm.move_in_image_coordinates.call_args.kwargs
+    assert stage_measure_thing._csm.move_in_image_coordinates.call_count == 1
+    lat_mov_kwargs = stage_measure_thing._csm.move_in_image_coordinates.call_args.kwargs
     assert lat_mov_kwargs == expected_movement
 
 
-def test_moves_for_z_prediction(rom_thing, mocker):
+def test_moves_for_z_prediction(stage_measure_thing, mocker):
     """Check the initial moves are of the correct size and are recorded."""
     # Mock the _offset_from and stage.position to return generated dictionaries that
     # increment each time they are called. (All values 0 the first time, all values 1
     # the second time ...)
     mocker.patch.object(
-        rom_thing, "_offset_from", side_effect=increasing_xy_dict_generator()
+        stage_measure_thing, "_offset_from", side_effect=increasing_xy_dict_generator()
     )
-    type(rom_thing._stage).position = mocker.PropertyMock(
+    type(stage_measure_thing._stage).position = mocker.PropertyMock(
         side_effect=increasing_xyz_dict_generator()
     )
 
     expected_movement = {"x": -800 * stage_measure.MEDIUM_STEP / 100, "y": 0}
 
     # Remove the mock RomData before starting
-    rom_thing._rom_data = stage_measure.RomDataTracker()
+    stage_measure_thing._cam_stage_data = stage_measure.CamStageTracker()
 
     # Run it!
-    rom_thing._moves_for_z_prediction("x", direction=-1)
+    stage_measure_thing._moves_for_z_prediction("x", direction=-1)
 
-    # Check that _rom_data now contains the 5 mocked returns in order.
-    assert rom_thing._rom_data.offsets == [{"x": i, "y": i} for i in range(5)]
-    assert rom_thing._rom_data.stage_coords == [
+    # Check that _cam_stage_data now contains the 5 mocked returns in order.
+    assert stage_measure_thing._cam_stage_data.offsets == [
+        {"x": i, "y": i} for i in range(5)
+    ]
+    assert stage_measure_thing._cam_stage_data.stage_coords == [
         {"x": i, "y": i, "z": i} for i in range(5)
     ]
 
     # Check that the csm movement function is called 5 times
-    assert rom_thing._csm.move_in_image_coordinates.call_count == 5
+    assert stage_measure_thing._csm.move_in_image_coordinates.call_count == 5
     # Each time with the expected movement
-    for arg_list in rom_thing._csm.move_in_image_coordinates.call_args_list:
+    for arg_list in stage_measure_thing._csm.move_in_image_coordinates.call_args_list:
         assert arg_list.kwargs == expected_movement
 
 
-def test_move_until_edge_error(rom_thing, mocker):
+def test_move_until_edge_error(stage_measure_thing, mocker):
     """Check that if there is an error while moving to the edge the stage returns to start."""
     mock_position_dict = {"x": 123, "y": 456, "z": 789}
-    type(rom_thing._stage).position = mocker.PropertyMock(
+    type(stage_measure_thing._stage).position = mocker.PropertyMock(
         return_value=mock_position_dict
     )
     mocker.patch.object(
-        rom_thing, "_moves_for_z_prediction", side_effect=RuntimeError("Mock")
+        stage_measure_thing, "_moves_for_z_prediction", side_effect=RuntimeError("Mock")
     )
 
     # Remove the mock RomData before starting
-    rom_thing._rom_data = stage_measure.RomDataTracker()
+    stage_measure_thing._cam_stage_data = stage_measure.CamStageTracker()
 
     # Error should be raised even though it is in the Try:
     with pytest.raises(RuntimeError, match="Mock"):
-        rom_thing._move_until_edge("y", direction=-1)
+        stage_measure_thing._move_until_edge("y", direction=-1)
     # However the "finally" should have executed, returning to the starting position
-    assert rom_thing._stage.move_absolute.call_count == 1
-    abs_move_kwargs = rom_thing._stage.move_absolute.call_args.kwargs
+    assert stage_measure_thing._stage.move_absolute.call_count == 1
+    abs_move_kwargs = stage_measure_thing._stage.move_absolute.call_args.kwargs
     expected_abs_move_kwargs = dict(
         **mock_position_dict, block_cancellation=True, backlash_compensation=None
     )
     assert abs_move_kwargs == expected_abs_move_kwargs
 
 
-def test_move_until_edge(rom_thing, mocker):
+def test_move_until_edge(stage_measure_thing, mocker):
     """Check move until edge runs the correct movement sequence."""
     # Remove the mock RomData before starting
-    rom_thing._rom_data = stage_measure.RomDataTracker()
+    stage_measure_thing._cam_stage_data = stage_measure.CamStageTracker()
 
-    rom_thing._stage.position = {"x": "mock", "y": "starting", "z": "pos"}
+    stage_measure_thing._stage.position = {"x": "mock", "y": "starting", "z": "pos"}
 
     def add_fake_initial_positions(*_args, **_kwargs):
         """Rather than run initial moves just add some fake data."""
         for i in range(5):
-            rom_thing._rom_data.record_movement(f"mock-init-pos{i + 1}", "mock-offset")
+            stage_measure_thing._cam_stage_data.record_movement(
+                f"mock-init-pos{i + 1}", "mock-offset"
+            )
 
     def update_stage_pos_on_big_move(*_args, **_kwargs):
         """With big moves update the stage position."""
         big_move_count = 1
         while True:
-            rom_thing._stage.position = f"mocked-big-move-pos{big_move_count}"
+            stage_measure_thing._stage.position = f"mocked-big-move-pos{big_move_count}"
             yield
             big_move_count += 1
 
     def set_final_pos(*_args, **_kwargs):
         """When move_back_until_motion_detected is run set a final stage position."""
-        rom_thing._stage.position = "mock-final-pos"
+        stage_measure_thing._stage.position = "mock-final-pos"
 
     # Mock the main movement functions
     mock_init_moves = mocker.patch.object(
-        rom_thing,
+        stage_measure_thing,
         "_moves_for_z_prediction",
         side_effect=add_fake_initial_positions,
     )
     mock_big_moves = mocker.patch.object(
-        rom_thing,
+        stage_measure_thing,
         "_big_z_corrected_movement",
         side_effect=update_stage_pos_on_big_move(),
     )
     mock_move_check = mocker.patch.object(
-        rom_thing, "_stage_still_moves", side_effect=[True] * 9 + [False]
+        stage_measure_thing, "_stage_still_moves", side_effect=[True] * 9 + [False]
     )
     mock_move_back = mocker.patch.object(
-        rom_thing, "_move_back_until_motion_detected", side_effect=set_final_pos
+        stage_measure_thing,
+        "_move_back_until_motion_detected",
+        side_effect=set_final_pos,
     )
 
     # Remove the mock RomData before starting
-    rom_thing._rom_data = stage_measure.RomDataTracker()
+    stage_measure_thing._cam_stage_data = stage_measure.CamStageTracker()
 
     # Run function
-    rom_thing._move_until_edge("y", direction=-1)
+    stage_measure_thing._move_until_edge("y", direction=-1)
 
     # Check the call counts are as expected
     # One call of initial moves
@@ -558,7 +587,7 @@ def test_move_until_edge(rom_thing, mocker):
     # And one call of _move_back_until_motion_detected
     assert mock_move_back.call_count == 1
 
-    assert rom_thing._rom_data.stage_coords == [
+    assert stage_measure_thing._cam_stage_data.stage_coords == [
         {"x": "mock", "y": "starting", "z": "pos"},
         "mock-init-pos1",
         "mock-init-pos2",
@@ -578,41 +607,43 @@ def test_move_until_edge(rom_thing, mocker):
     ]
 
 
-def test_perform_rom_actions_locked(rom_thing):
+def test_perform_rom_actions_locked(stage_measure_thing):
     """Check the error if running one of the calibration actions while locked."""
     # Not an RLock so no need to thread.
-    rom_thing._lock.acquire()
+    stage_measure_thing._lock.acquire()
     err_msg = "Trying to run ROM test when a test is already running."
     with pytest.raises(RuntimeError, match=err_msg):
-        rom_thing.perform_rom_test()
+        stage_measure_thing.perform_rom_test()
     err_msg = "Trying to run recentre when a test is already running."
     with pytest.raises(RuntimeError, match=err_msg):
-        rom_thing.perform_recentre()
+        stage_measure_thing.perform_recentre()
 
 
-def test_perform_rom_test(rom_thing, mocker):
+def test_perform_rom_test(stage_measure_thing, mocker):
     """Check that perform Rom Test runs the expected high level algorithm."""
 
-    def check_and_modify_rom_data(axis: str, direction: int, **_kwargs):
-        """Check the rom_data is empty each time, and add a final position."""
-        # check rom_data was cleared at the start of this run
-        assert len(rom_thing._rom_data.stage_coords) == 0
+    def check_and_modify_cam_stage_data(axis: str, direction: int, **_kwargs):
+        """Check the cam_stage_data is empty each time, and add a final position."""
+        # check cam_stage_data was cleared at the start of this run
+        assert len(stage_measure_thing._cam_stage_data.stage_coords) == 0
         dist = 1111 if axis == "x" else 2222
         final_pos = {"x": 0, "y": 0}
         final_pos[axis] = dist * direction
-        rom_thing._rom_data.stage_coords.append(final_pos)
+        stage_measure_thing._cam_stage_data.stage_coords.append(final_pos)
 
     mock_move_until_edge = mocker.patch.object(
-        rom_thing, "_move_until_edge", side_effect=check_and_modify_rom_data
+        stage_measure_thing,
+        "_move_until_edge",
+        side_effect=check_and_modify_cam_stage_data,
     )
 
     mocker.patch.object(
-        rom_thing._cam, "grab_as_array", return_value=np.zeros([123, 456, 3])
+        stage_measure_thing._cam, "grab_as_array", return_value=np.zeros([123, 456, 3])
     )
 
-    # Enter the ROM thing to get the data directory.
-    with rom_thing as running_rom_thing:
-        final_dict = running_rom_thing.perform_rom_test()
+    # Enter the StageMeasureThing to get the data directory.
+    with stage_measure_thing as running_stage_measure_thing:
+        final_dict = running_stage_measure_thing.perform_rom_test()
 
     # This should take less than 1 sec
     assert final_dict["Time"] <= 1
@@ -640,24 +671,24 @@ def test_perform_rom_test(rom_thing, mocker):
     assert mock_move_until_edge.call_args_list[3].kwargs["direction"] == -1
 
 
-def test_perform_recenter(rom_thing, mocker, caplog):
+def test_perform_recenter(stage_measure_thing, mocker, caplog):
     """Check that performing the recentre runs through expected operations."""
 
     def check_lock(*_args, **_kwargs):
         """Check the thing is locked."""
-        assert not rom_thing._lock.acquire(blocking=False)
+        assert not stage_measure_thing._lock.acquire(blocking=False)
 
     mock_set_stream_res = mocker.patch.object(
-        rom_thing, "_set_stream_resolution", side_effect=check_lock
+        stage_measure_thing, "_set_stream_resolution", side_effect=check_lock
     )
-    mock_recentre_axis = mocker.patch.object(rom_thing, "_recentre_axis")
+    mock_recentre_axis = mocker.patch.object(stage_measure_thing, "_recentre_axis")
 
     # Set a mock stage position, as we patch _recentre_axis this should be logged
     # as the centre.
-    rom_thing._stage.position = {"x": 4321, "y": 1234, "z": 0}
+    stage_measure_thing._stage.position = {"x": 4321, "y": 1234, "z": 0}
 
     with caplog.at_level(logging.INFO):
-        rom_thing.perform_recentre()
+        stage_measure_thing.perform_recentre()
 
     assert len(caplog.messages) == 3
     assert caplog.messages[0] == "Recentring the stage."
@@ -665,8 +696,8 @@ def test_perform_recenter(rom_thing, mocker, caplog):
     assert caplog.messages[2] == "Position reset to (0, 0, 0)."
 
     # Check the lock was freed
-    assert rom_thing._lock.acquire(blocking=False)
-    rom_thing._lock.release()
+    assert stage_measure_thing._lock.acquire(blocking=False)
+    stage_measure_thing._lock.release()
 
     assert mock_set_stream_res.call_count == 1
 
@@ -676,31 +707,31 @@ def test_perform_recenter(rom_thing, mocker, caplog):
     assert mock_recentre_axis.call_args_list[1].args[0] == "y"
 
     # check that the position set to zero once
-    assert rom_thing._stage.set_zero_position.call_count == 1
+    assert stage_measure_thing._stage.set_zero_position.call_count == 1
 
 
 @pytest.mark.parametrize("true_on", [1, 4, 10, 11])
-def test_recentre_axis(true_on, rom_thing, mocker):
+def test_recentre_axis(true_on, stage_measure_thing, mocker):
     """Test the high level algorithm of recentring an axis.
 
     This doesn't include deciding if we are centred or choosing the direction to move.
     """
     ## Start such that movement starts negative
-    rom_thing._stage.position = {"x": 10000, "y": 10000, "z": 0}
-    mock_moves = mocker.patch.object(rom_thing, "_moves_for_z_prediction")
+    stage_measure_thing._stage.position = {"x": 10000, "y": 10000, "z": 0}
+    mock_moves = mocker.patch.object(stage_measure_thing, "_moves_for_z_prediction")
 
     # Mock _recentre_decision so it returns (False, 1) a number of times then finally
     # (True, 1).
     decisions = [(False, 1)] * (true_on - 1) + [(True, 1)]
     mock_recentre_decision = mocker.patch.object(
-        rom_thing, "_recentre_decision", side_effect=decisions
+        stage_measure_thing, "_recentre_decision", side_effect=decisions
     )
 
     if true_on > 10:
         with pytest.raises(RuntimeError, match="Couldn't find centre"):
-            rom_thing._recentre_axis("x")
+            stage_measure_thing._recentre_axis("x")
     else:
-        rom_thing._recentre_axis("x")
+        stage_measure_thing._recentre_axis("x")
 
     # _recentre_decision is called until True or exits after 10 attempts
     assert mock_recentre_decision.call_count == min(true_on, 10)
@@ -725,18 +756,24 @@ def test_recentre_axis(true_on, rom_thing, mocker):
         (-199, -1, (True, 1)),  # Always return 1 when c
     ],
 )
-def test_recentre_decision(dist, direction, expected_decision, rom_thing, mocker):
+def test_recentre_decision(
+    dist, direction, expected_decision, stage_measure_thing, mocker
+):
     """What the algorithm decides to do in different situations."""
-    # Mock find turning point just because there is no _rom_data
-    mocker.patch.object(rom_thing._rom_data, "find_turning_point")
+    # Mock find turning point just because there is no _cam_stage_data
+    mocker.patch.object(stage_measure_thing._cam_stage_data, "find_turning_point")
 
     # As _distance_in_img_percentage and _img_dir_from_stage_coords are tested
     # this test mocks their values and checks the return is as expected
-    mocker.patch.object(rom_thing, "_distance_in_img_percentage", return_value=dist)
-    mocker.patch.object(rom_thing, "_img_dir_from_stage_coords", return_value=direction)
+    mocker.patch.object(
+        stage_measure_thing, "_distance_in_img_percentage", return_value=dist
+    )
+    mocker.patch.object(
+        stage_measure_thing, "_img_dir_from_stage_coords", return_value=direction
+    )
 
-    assert rom_thing._recentre_decision("x") == expected_decision
+    assert stage_measure_thing._recentre_decision("x") == expected_decision
 
     # Check that we make an absolute move (to the centre) before returning centred.
     centred = expected_decision[0]
-    rom_thing._stage.move_absolute.call_count == 1 if centred else 0
+    stage_measure_thing._stage.move_absolute.call_count == 1 if centred else 0
