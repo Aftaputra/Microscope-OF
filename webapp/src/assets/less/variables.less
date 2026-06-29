@@ -199,6 +199,74 @@
 }
 
 /*
+ * OpenFlexure tabs.
+ *
+ * The ofm-* rules are global rules that are written for the to OFM interface (as opposed to
+ * imported global rules). All tab content is in an `ofm-tab`
+ */
+
+.ofm-tab {
+    --ofm-navbar-height: 50px;
+}
+
+// For adding a nav bar at the top of an `.ofm-tab`
+.ofm-tab-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  height: var(--ofm-navbar-height);
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: rgba(180, 180, 180, 0.25);
+  padding-right: 20px;
+  background: #fff;
+}
+.hook-inverse() {
+    .ofm-tab-navbar {
+        background: #252525;
+    }
+}
+
+/*
+ * A container with a sidebar.
+ *
+ * This is designed to be used inside an `.ofm-tab` to create a container with a sidebar that can be
+ * opened on the right hand side.
+ */
+.ofm-container-with-sidebar
+{
+    display: grid;
+    grid-template-columns: 1fr 0;
+    height: 100%;
+}
+
+.ofm-container-with-sidebar.sidebar-open {
+    grid-template-columns: 1fr 250px;
+}
+
+.ofm-sidebar {
+    padding: 10px;
+    overflow: hidden;
+    border-left: none;
+    display: none;
+    background:#f5f5f5;
+}
+
+.ofm-sidebar.open {
+    border-left: 1px solid rgba(180, 180, 180, 0.25);
+    display: block;
+}
+
+.hook-inverse() {
+    .ofm-sidebar{
+        background: #282626;
+    }
+}
+
+
+/*
  * Links
  */
 .hook-inverse() {

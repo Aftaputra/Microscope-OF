@@ -104,7 +104,8 @@ export default {
 
 .multi-select {
   position: relative;
-  width: 250px;
+  width: 100%;
+  max-width: 250px;
 }
 
 .dropdown-top {
