@@ -1,65 +1,59 @@
 """Custom illumination Thing untuk LED PWM dual channel (cool + warm white).
-Engineer: isi bagian SERIAL COMMAND TEMPLATE di bawah sesuai firmware kalian.
+Protokol: led <cw> <ww> — nilai 0-255
 """
 
+from __future__ import annotations
+from typing import Optional, Self
+from types import TracebackType
 import serial
 import labthings_fastapi as lt
 from .illumination import Illumination
 from openflexure_microscope_server.ui import PropertyControl, property_control_for
 
-# ============================================================
-# SERIAL COMMAND TEMPLATE — ENGINEER ISI BAGIAN INI
-# ============================================================
-SERIAL_PORT = "/dev/ttyUSB0"   # sama dengan CustomStage kalau satu board
+SERIAL_PORT = "/dev/ttyUSB0"
 BAUD_RATE = 115200
 
-def cmd_set_cool(brightness: float) -> bytes:
-    """Set brightness cool white LED. brightness: 0.0 - 1.0"""
-    pwm = int(brightness * 255)
-    return f"LED COOL {pwm}\n".encode()  # ← sesuaikan format
-
-def cmd_set_warm(brightness: float) -> bytes:
-    """Set brightness warm white LED. brightness: 0.0 - 1.0"""
-    pwm = int(brightness * 255)
-    return f"LED WARM {pwm}\n".encode()  # ← sesuaikan format
-# ============================================================
 
 class CustomIllumination(Illumination):
-    """Illumination Thing untuk LED PWM dual channel."""
+    """Illumination Thing untuk LED PWM dual channel (cool white + warm white)."""
 
-    def __init__(self, thing_server_interface: lt.ThingServerInterface, simulate: bool = False) -> None:
+    def __init__(
+        self,
+        thing_server_interface: lt.ThingServerInterface,
+        simulate: bool = False,
+        port: Optional[str] = None,
+    ) -> None:
         self._simulate = simulate
-        self._serial = None
+        self._serial: Optional[serial.Serial] = None
+        self._port = port or SERIAL_PORT
         self._brightness_cool = 0.0
         self._brightness_warm = 0.0
         super().__init__(thing_server_interface)
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         if not self._simulate:
-            self._serial = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+            self._serial = serial.Serial(self._port, BAUD_RATE, timeout=2)
         return self
 
-    @lt.property
-    def manual_illumination_settings(self) -> list[PropertyControl]:
-        """Expose brightness sliders ke UI."""
-        return [
-            property_control_for(self, "brightness_cool", label="Cool White (0-1)"),
-            property_control_for(self, "brightness_warm", label="Warm White (0-1)"),
-        ]
-    
-    def __exit__(self, *args):
+    def __exit__(self, *args) -> None:
         if self._serial and self._serial.is_open:
-            self.set_led(False)
+            self._send_led(0, 0)
             self._serial.close()
 
     def _send(self, command: bytes) -> str:
         if self._simulate:
             print(f"[SIM] ILLUMINATION >> {command.decode().strip()}")
-            return "ok"
+            return "done."
         if self._serial is None or not self._serial.is_open:
             raise RuntimeError("Serial port tidak terbuka.")
         self._serial.write(command)
         return self._serial.readline().decode().strip()
+
+    def _send_led(self, cw: int, ww: int) -> None:
+        """Kirim command led ke ESP. cw dan ww adalah nilai 0-255."""
+        self._send(f"led {cw} {ww}\n".encode())
+
+    # ── Properties untuk UI ──────────────────────────────────
 
     @lt.setting
     def brightness_cool(self) -> float:
@@ -70,7 +64,9 @@ class CustomIllumination(Illumination):
     def _set_brightness_cool(self, value: float) -> None:
         value = max(0.0, min(1.0, value))
         self._brightness_cool = value
-        self._send(cmd_set_cool(value))
+        cw = int(value * 255)
+        ww = int(self._brightness_warm * 255)
+        self._send_led(cw, ww)
 
     @lt.setting
     def brightness_warm(self) -> float:
@@ -81,14 +77,24 @@ class CustomIllumination(Illumination):
     def _set_brightness_warm(self, value: float) -> None:
         value = max(0.0, min(1.0, value))
         self._brightness_warm = value
-        self._send(cmd_set_warm(value))
+        cw = int(self._brightness_cool * 255)
+        ww = int(value * 255)
+        self._send_led(cw, ww)
 
     @lt.action
     def set_led(self, led_on: bool = True) -> None:
-        """Nyalain semua LED (ke brightness sebelumnya) atau matiin semua."""
+        """Nyalain semua LED atau matiin semua."""
         if led_on:
-            self._send(cmd_set_cool(self._brightness_cool))
-            self._send(cmd_set_warm(self._brightness_warm))
+            cw = int(self._brightness_cool * 255)
+            ww = int(self._brightness_warm * 255)
         else:
-            self._send(cmd_set_cool(0))
-            self._send(cmd_set_warm(0))
+            cw, ww = 0, 0
+        self._send_led(cw, ww)
+
+    @lt.property
+    def manual_illumination_settings(self) -> list[PropertyControl]:
+        """Expose brightness sliders ke UI."""
+        return [
+            property_control_for(self, "brightness_cool", label="Cool White"),
+            property_control_for(self, "brightness_warm", label="Warm White"),
+        ]

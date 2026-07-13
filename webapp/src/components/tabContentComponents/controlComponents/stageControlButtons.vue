@@ -96,13 +96,13 @@ export default {
   },
   data: () => ({
     jogIntervalId: null,
-    jogDistance: 600,
     jogTime: 300,
   }),
 
-  computed: {
-    ...mapWritableState(useSettingsStore, ["navigationInvert"]),
-  },
+computed: {
+  ...mapWritableState(useSettingsStore, ["navigationInvert"]),
+  ...mapWritableState(useSettingsStore, ["navigationStepSize"]),
+},
 
   methods: {
     /**
@@ -123,12 +123,12 @@ export default {
       // pointer is.
       pointerEvent.target.setPointerCapture(pointerEvent.pointerId);
 
-      let invokeJog = () =>
-        this.invokeAction("stage", "jog", {
-          x: x * this.jogDistance * (this.navigationInvert.x ? -1 : 1),
-          y: y * this.jogDistance * (this.navigationInvert.y ? -1 : 1),
-          z: z * this.jogDistance,
-        });
+let invokeJog = () =>
+  this.invokeAction("stage", "jog", {
+    x: x * this.navigationStepSize.x * (this.navigationInvert.x ? -1 : 1),
+    y: y * this.navigationStepSize.y * (this.navigationInvert.y ? -1 : 1),
+    z: z * this.navigationStepSize.z,
+  });
       invokeJog();
       this.jogIntervalId = setInterval(invokeJog, this.jogTime);
     },
