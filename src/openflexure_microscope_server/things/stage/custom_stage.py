@@ -11,11 +11,12 @@ from types import TracebackType
 import serial
 import labthings_fastapi as lt
 from . import BaseStage
+from ..serial_manager import serial_manager  # Import dari folder things
 
 # ============================================================
 # KONFIGURASI SERIAL — sesuaikan dengan port ESP
 # ============================================================
-SERIAL_PORT = "/dev/ttyUSB0"   # Windows: "COM3", "COM4", dll
+SERIAL_PORT = "COM4"   # Windows: "COM3", "COM4", dll
 BAUD_RATE = 115200
 STEP_TIME = 0.001  # estimasi waktu per step (detik)
 # ============================================================
@@ -33,15 +34,35 @@ class CustomStage(BaseStage):
         port: Optional[str] = None,
     ) -> None:
         self._simulate = simulate
-        self._serial: Optional[serial.Serial] = None
         self._port = port or SERIAL_PORT
         self._hardware_position = {"x": 0, "y": 0, "z": 0}
+        print(f"[Stage] __init__ called: simulate={simulate}, port={self._port}")
         super().__init__(thing_server_interface)
 
     def __enter__(self) -> Self:
+        """Inisialisasi koneksi serial."""
+        print(f"[Stage] __enter__ called: simulate={self._simulate}, port={self._port}")
+        
+        # Inisialisasi shared connection
+        success = serial_manager.initialize(
+            port=self._port,
+            baud_rate=BAUD_RATE,
+            simulate=self._simulate
+        )
+        
+        # Update simulate status berdasarkan hasil inisialisasi
+        self._simulate = serial_manager.is_simulate()
+        print(f"[Stage] After initialization: simulate={self._simulate}")
+        
+        # Test koneksi
         if not self._simulate:
-            self._serial = serial.Serial(self._port, BAUD_RATE, timeout=2)
-            time.sleep(2)  # tunggu ESP reset
+            try:
+                response = self._send(b"p?\n")
+                print(f"[Stage] ESP response: {response}")
+            except Exception as e:
+                print(f"[Stage] Failed to communicate with ESP: {e}")
+                self._simulate = True
+        
         return self
 
     def __exit__(
@@ -50,33 +71,40 @@ class CustomStage(BaseStage):
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        if self._serial and self._serial.is_open:
-            self._send(b"release\n")
-            self._serial.close()
+        """Tutup koneksi - hanya ditutup sekali."""
+        print("[Stage] __exit__ called")
+        # Tidak menutup di sini, biarkan serial_manager yang handle
 
     def _send(self, command: bytes) -> str:
         """Kirim command ke ESP dan return response."""
-        if self._simulate:
+        if self._simulate or serial_manager.is_simulate():
             print(f"[SIM] STAGE >> {command.decode().strip()}")
-            # Simulasi response p? dengan posisi saat ini
             if command.strip() == b"p?":
                 pos = self._hardware_position
                 return f"{pos['x']} {pos['y']} {pos['z']}"
             return "done."
-        if self._serial is None or not self._serial.is_open:
-            raise RuntimeError("Serial port tidak terbuka.")
-        self._serial.write(command)
-        return self._serial.readline().decode().strip()
+        
+        try:
+            response = serial_manager.send_command(command)
+            print(f"[Stage] Command: {command.decode().strip()} -> Response: {response}")
+            return response
+        except RuntimeError as e:
+            print(f"[Stage] Serial error: {e}")
+            self._simulate = True
+            raise
 
     # ── Method wajib dari BaseStage ──────────────────────────
 
     def _hardware_update_position(self) -> None:
         """Baca posisi dari ESP."""
-        response = self._send(b"p?\n")
         try:
-            x, y, z = [int(v) for v in response.split()]
-            self._hardware_position = {"x": x, "y": y, "z": z}
-        except (ValueError, AttributeError):
+            response = self._send(b"p?\n")
+            if response:
+                x, y, z = [int(v) for v in response.split()]
+                self._hardware_position = {"x": x, "y": y, "z": z}
+                print(f"[Stage] Position updated: x={x}, y={y}, z={z}")
+        except (ValueError, AttributeError) as e:
+            print(f"[Stage] Failed to parse position: {e}")
             pass  # keep last known position if parse fails
 
     def _hardware_move_relative(

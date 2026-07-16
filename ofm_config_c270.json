@@ -6,11 +6,17 @@
         "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
         "stage": {
             "class": "openflexure_microscope_server.things.stage.custom_stage:CustomStage",
-            "kwargs": {"simulate": true}
+            "kwargs": {
+                "simulate": false,
+                "port": "COM4"
+            }
         },
         "illumination": {
             "class": "openflexure_microscope_server.things.illumination_custom:CustomIllumination",
-            "kwargs": {"simulate": true}
+            "kwargs": {
+                "simulate": false,
+                "port": "COM4"
+            }
         },
         "system": "openflexure_microscope_server.things.system:OpenFlexureSystem",
         "smart_scan": {
