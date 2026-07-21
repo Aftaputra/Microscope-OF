@@ -11,7 +11,7 @@ from .illumination import Illumination
 from openflexure_microscope_server.ui import PropertyControl, property_control_for
 from .serial_manager import serial_manager
 
-SERIAL_PORT = "COM4"
+SERIAL_PORT = "COM3"
 BAUD_RATE = 115200
 
 

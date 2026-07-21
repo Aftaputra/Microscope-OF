@@ -16,7 +16,7 @@ from ..serial_manager import serial_manager  # Import dari folder things
 # ============================================================
 # KONFIGURASI SERIAL — sesuaikan dengan port ESP
 # ============================================================
-SERIAL_PORT = "COM4"   # Windows: "COM3", "COM4", dll
+SERIAL_PORT = "COM3"   # Windows: "COM3", "COM4", dll
 BAUD_RATE = 115200
 STEP_TIME = 0.001  # estimasi waktu per step (detik)
 # ============================================================

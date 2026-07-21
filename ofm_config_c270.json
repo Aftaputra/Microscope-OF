@@ -8,14 +8,14 @@
             "class": "openflexure_microscope_server.things.stage.custom_stage:CustomStage",
             "kwargs": {
                 "simulate": false,
-                "port": "COM4"
+                "port": "COM3"
             }
         },
         "illumination": {
             "class": "openflexure_microscope_server.things.illumination_custom:CustomIllumination",
             "kwargs": {
                 "simulate": false,
-                "port": "COM4"
+                "port": "COM3"
             }
         },
         "system": "openflexure_microscope_server.things.system:OpenFlexureSystem",
